@@ -17,6 +17,7 @@ import {
   markGtfsUpdatePrompted,
   reloadGtfsFromCache,
   snoozePendingGtfsUpdate,
+  usesHostedGtfsSqlite,
 } from '../services/gtfsService';
 
 const SNOOZE_MS = 30 * 60 * 1000;
@@ -158,6 +159,53 @@ export function GtfsUpdateProvider({ children }) {
   const [progressMessage, setProgressMessage] = useState('');
   const [progressPercent, setProgressPercent] = useState(0);
   const hasCheckedRef = useRef(false);
+  const refreshInFlightRef = useRef(false);
+  const silentHostedUpdates = usesHostedGtfsSqlite();
+
+  const runRefresh = useCallback(async ({ silent = false } = {}) => {
+    if (refreshInFlightRef.current) {
+      return { ok: false, reason: 'refresh-in-progress' };
+    }
+
+    refreshInFlightRef.current = true;
+    setUpdateState(silent ? 'silent-downloading' : 'downloading');
+    setProgressMessage('Downloading updated schedules...');
+    setProgressPercent(0.08);
+
+    try {
+      const result = await applyPendingGtfsUpdate({
+        onProgress: (message) => {
+          setProgressMessage(message);
+          setProgressPercent((prev) => mapProgressMessageToPercent(message, prev));
+        },
+      });
+
+      if (!result?.ok) {
+        throw new Error('No pending schedule update was found.');
+      }
+
+      setProgressPercent(1);
+      setProgressMessage('Applying updated schedules...');
+      await reloadGtfsFromCache();
+      setUpdateInfo(null);
+
+      if (silent) {
+        setProgressMessage('Schedules updated in background.');
+        setUpdateState('idle');
+      } else {
+        setProgressMessage('Schedules are now up to date.');
+        setUpdateState('completed');
+      }
+
+      return { ok: true };
+    } catch (e) {
+      setProgressMessage(e instanceof Error ? e.message : 'Refresh failed.');
+      setUpdateState('failed');
+      return { ok: false, reason: 'refresh-failed' };
+    } finally {
+      refreshInFlightRef.current = false;
+    }
+  }, []);
 
   const syncUpdateState = useCallback(async (allowCheck) => {
     const pending = await getPendingGtfsUpdate();
@@ -172,6 +220,12 @@ export function GtfsUpdateProvider({ children }) {
     if (pending) {
       const normalized = { ...pending, status: 'available', snoozeUntil: null };
       setUpdateInfo(normalized);
+
+      if (silentHostedUpdates) {
+        await runRefresh({ silent: true });
+        return;
+      }
+
       setUpdateState('available');
       await markGtfsUpdatePrompted(now);
       return;
@@ -187,6 +241,12 @@ export function GtfsUpdateProvider({ children }) {
     const result = await checkForGtfsStaticUpdate();
     if (result?.status === 'update-available' && result.update) {
       setUpdateInfo(result.update);
+
+      if (silentHostedUpdates) {
+        await runRefresh({ silent: true });
+        return;
+      }
+
       setUpdateState('available');
       await markGtfsUpdatePrompted(now);
       return;
@@ -194,7 +254,7 @@ export function GtfsUpdateProvider({ children }) {
 
     setUpdateInfo(null);
     setUpdateState('idle');
-  }, []);
+  }, [runRefresh, silentHostedUpdates]);
 
   useEffect(() => {
     if (!ready || error) return;
@@ -233,33 +293,8 @@ export function GtfsUpdateProvider({ children }) {
   }, [updateState]);
 
   const refreshNow = useCallback(async () => {
-    setUpdateState('downloading');
-    setProgressMessage('Downloading and rebuilding schedules...');
-    setProgressPercent(0.08);
-
-    try {
-      const result = await applyPendingGtfsUpdate({
-        onProgress: (message) => {
-          setProgressMessage(message);
-          setProgressPercent((prev) => mapProgressMessageToPercent(message, prev));
-        },
-      });
-
-      if (!result?.ok) {
-        throw new Error('No pending schedule update was found.');
-      }
-
-      setProgressPercent(1);
-      setProgressMessage('Applying updated schedules…');
-      await reloadGtfsFromCache();
-      setProgressMessage('Schedules are now up to date.');
-      setUpdateInfo(null);
-      setUpdateState('completed');
-    } catch (e) {
-      setProgressMessage(e instanceof Error ? e.message : 'Refresh failed.');
-      setUpdateState('failed');
-    }
-  }, []);
+    await runRefresh({ silent: false });
+  }, [runRefresh]);
 
   const snoozeFor30Minutes = useCallback(async () => {
     const snoozeUntil = Date.now() + SNOOZE_MS;

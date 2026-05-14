@@ -1530,6 +1530,10 @@ export async function checkForGtfsStaticUpdate() {
   return maybeRefreshGtfsCacheInBackground();
 }
 
+export function usesHostedGtfsSqlite() {
+  return isHostedSqliteConfigured();
+}
+
 export async function applyPendingGtfsUpdate(options = {}) {
   if (isHostedSqliteConfigured()) {
     const pending = await getPendingHostedSqliteUpdate();
