@@ -1,0 +1,101 @@
+{
+  "expo": {
+    "name": "TrackTransit",
+    "slug": "TrackTransit",
+    "scheme": "tracktransit",
+    "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "TrackTransit uses your location to center the map and track your active ride.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "TrackTransit uses your location in the background to send get-off alerts before your destination.",
+        "NSUserNotificationsUsageDescription": "TrackTransit sends notifications to alert you about trip delays for your saved routes.",
+        "UIBackgroundModes": [
+          "location",
+          "location"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.harpreetmailsexpo.TrackTransit"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
+      ],
+      "package": "com.harpreetmailsexpo.TrackTransit"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7ff38324-7f69-412d-8c64-b8d95f647183",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0"
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#00853F"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "TrackTransit uses your location to center the map and track your active ride.",
+          "locationAlwaysAndWhenInUsePermission": "TrackTransit uses your location in the background to send get-off alerts before your destination.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-build-properties"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7ff38324-7f69-412d-8c64-b8d95f647183"
+      }
+    },
+    "owner": "harpreetmailsexpo"
+  }
+}

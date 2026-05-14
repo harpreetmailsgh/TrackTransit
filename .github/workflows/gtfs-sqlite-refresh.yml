@@ -1,0 +1,46 @@
+name: GTFS SQLite Refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build GTFS SQLite
+        env:
+          GTFS_VERSION: ${{ github.run_number }}-${{ github.run_attempt }}
+          GTFS_DB_FILENAME: go-gtfs-v1.sqlite
+          GTFS_DB_URL: https://github.com/${{ github.repository }}/releases/download/gtfs-data/go-gtfs-v1.sqlite
+        run: npm run gtfs:build-sqlite
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: gtfs-data
+          name: GTFS Data
+          draft: false
+          prerelease: false
+          make_latest: false
+          overwrite_files: true
+          files: |
+            dist/gtfs/go-gtfs-v1.sqlite
+            dist/gtfs/manifest.json

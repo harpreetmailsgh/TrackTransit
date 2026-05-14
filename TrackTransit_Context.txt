@@ -1,0 +1,87 @@
+====================================================
+TRACKTRANSIT — PROJECT CONTEXT FOR CLAUDE
+====================================================
+Paste this at the start of a new conversation to continue where we left off.
+====================================================
+
+WHAT WE ARE BUILDING:
+A native mobile app called TrackTransit for real-time GO Transit tracking in Ontario Canada. 
+Built with React Native + Expo. Starts with GO Transit, expands to all Canada then US later.
+
+TOOL WE ARE USING TO BUILD:
+Cursor (free tier) — AI coding tool. Already installed and open with TrackTransit folder.
+
+WHAT IS ALREADY SET UP ON MY COMPUTER:
+- Node.js v24 installed
+- Cursor installed and logged in
+- TrackTransit folder created on Desktop and open in Cursor
+- Expo Go installed on my phone
+
+DATA APPROACH — IMPORTANT:
+We are using GTFS static + GTFS-RT real-time feeds. NOT the GO Transit API. NO mock data.
+
+GTFS Static file (schedules, stops, routes, platforms):
+https://www.gotransit.com/static_files/gotransit/assets/Files/GO_GTFS.zip
+- No registration needed, download directly
+- Already downloaded and saved in TrackTransit folder
+
+GTFS-RT live feeds (no key needed, free, public):
+- Trip updates (delays):     https://api.gotrains.ca/gtfsrt/v2/GO/GTFSRt/TripUpdates
+- Vehicle positions:         https://api.gotrains.ca/gtfsrt/v2/GO/GTFSRt/VehiclePosition
+
+NO paid services in MVP. No Railway, no Firebase yet. Those come later.
+
+====================================================
+FEATURES WE AGREED TO BUILD (in priority order)
+====================================================
+
+PHASE 1 — Core (Weeks 1-3):
+1. App shell — bottom tabs: Home, Search, Saved. GO green colour #00853F
+2. Live map on Home screen showing all active GO trains as moving pins (GTFS-RT vehicle positions)
+3. Tap a stop → departure board with scheduled + live arrival times + delay badge
+4. Stop to Stop trip planner with platform information (Feature 2A)
+5. Search for any GO Transit stop by name
+6. Saved stops with live delay badges
+
+PHASE 2 — Smart Features (Weeks 4-6):
+9. "Get off at next stop" notification while riding (fixes Transit app's #1 complaint)
+10. Nearby GO stations from current location with walk/drive/transit times
+11. Uber booking placeholder button (opens Uber app — one line of code)
+12. Location to Location trip planner (enter any address, like Uber)
+13. Last train of night warning for saved routes
+
+PHASE 3 — Expansion (Months 3-6):
+14. Add TTC, OC Transpo, MiWay, HSR, YRT (all have GTFS feeds)
+15. Crowdsourced "I am on this train" position reporting
+16. Canada-wide then US expansion using Mobility Database (6,000+ feeds)
+
+====================================================
+MONETIZATION (no ads, no subscriptions)
+====================================================
+1. Agency licensing — sell white-label version to municipalities
+2. Employer commuter dashboards — B2B SaaS for companies
+3. Aggregate data licensing — anonymised ridership analytics
+4. Ticketing commission — % fee on Presto top-ups (Phase 2)
+5. Developer API — charge 3rd parties for enriched data access
+6. Mobility partnerships — bikeshare/rideshare referral revenue
+
+====================================================
+KEY DECISIONS ALREADY MADE
+====================================================
+- App name: TrackTransit
+- Framework: React Native + Expo (NOT web app, NOT Capacitor)
+- AI coding tool: Cursor free tier
+- Data: GTFS static + GTFS-RT (NOT GO Transit API)
+- No mock data — real data from first prompt
+- No paid services in MVP
+- Start GO Transit Ontario → expand Canada → expand US
+- Build order: app shell first, then real data layer, then features one by one
+
+====================================================
+WHERE WE LEFT OFF
+====================================================
+We are about to write the very first prompt in Cursor to start building the app.
+Cursor is open, TrackTransit folder is open inside Cursor.
+Next step: write the first prompt to build the app shell with navigation and colour scheme.
+
+====================================================

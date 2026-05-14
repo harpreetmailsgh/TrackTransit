@@ -1,0 +1,256 @@
+﻿
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head><title>
+	GO Tracker
+</title><meta http-equiv="X-UA-Compatible" content="IE=8,9" /><link href="Styles/Site.css" rel="stylesheet" type="text/css" /><link href="Styles/GoStyle.css" rel="stylesheet" type="text/css" />
+    <script src="Scripts/jquery-1.5.1.js" type="text/javascript"></script>
+    <script type="text/javascript" src="Scripts/jquery.blockui.js"></script>
+    <script type="text/javascript" src="Scripts/jquery.marquee.js"></script>
+    <script src="Scripts/jquery-blink.js" language="javscript" type="text/javascript"></script>
+    
+</head>
+<body onload="javascript:setCurrentTime();" style="height:100%;">
+    <form method="post" action="./Error.aspx" id="ctl01">
+<div class="aspNetHidden">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="BAZaNeQZTlUR+IsU/m2yHv3VbpzYUYSCvtMBPTWmZrK8vIcm681T0Gxe1HeiSlq9vhRGVmFRhLkE6K1Rl64R0cr0SyM=" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['ctl01'];
+if (!theForm) {
+    theForm = document.ctl01;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/GoTracker/web/WebResource.axd?d=pynGkmcFUV13He1Qd6_TZAtms_35m_n9ma3mf80a0pf1_SvaXSWGdJ7tX-Aqdgutce2pLA2&amp;t=638901392248157332" type="text/javascript"></script>
+
+
+<script src="/GoTracker/web/ScriptResource.axd?d=uHIkleVeDJf4xS50Krz-yPOWLsjiig1OjoNaAltU0VxewcmP8ls4coPqnM399vcNlAUn6FsXGJdOHYYImeg6nf4Xb_5l3sPcuKpV4YQROOB53yH95Qzb-EdmD21ArAe_sjVHR2vwaJiZSBQh6QDBfkeb4Yo1&amp;t=5c0e0825" type="text/javascript"></script>
+<script src="/GoTracker/web/ScriptResource.axd?d=Jw6tUGWnA15YEa3ai3FadIqx10tJ5kAULsWey_Euos2-rTfuiGWgAzl9avu6USIkh6yDXxB1ZJC5ztbUzDn3_fLNu4uJyOUjTrE71V09Uq7BP-uQ4_TX7PxqzMETtZTUgNjgJJVTycUj434OBkJJVbJWqoc1&amp;t=5c0e0825" type="text/javascript"></script>
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="C2D2CC10" />
+</div>
+    <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ctl00$ScriptManager1', 'ctl01', [], [], [], 90, 'ctl00');
+//]]>
+</script>
+
+    <table class="sTbl" style="width:100%; height:100%; background-color:White;border:0; border-collapse:collapse; border-spacing:0; border-color:White; border-style:none;" cellpadding="0" cellspacing="0">
+    <tr class="sTbl" style="width:100%;"><td class="sTbl"><div id="header" style="margin:0; padding:0; border-collapse:collapse; border-style:none;"><!--<h1>
+        <img src="Images/GOTripLocatorLogo.jpg" alt="GO Logo Image" class="GOLogo" align="left" />
+        GO Transit Tracker
+        <span class="currentTimeHome" id="lblCurrentTime"></span>
+    </h1>-->
+    <table class="sTbl2" style="border:0; border-collapse:collapse; border-spacing:0; border-color:White; border-style:none; width:100%; background-color:White; border-color:White;" cellpadding="0" cellspacing="0">
+        <tr style="display:table-row;">
+            <td id="internalBanner" width="35%" style="background-image: url(Images/clock_bg.png); background-repeat:repeat-x;"><img src="Images/GOTrackerbanner.png" alt="GO Logo Image" class="LogoImg"/>
+            </td>
+            <td align="right" style="background-image: url(Images/clock_bg.png); background-repeat:repeat-x;">
+                <!--<img src="Images/GO Tracker banner2.JPG" alt="GO Logo Image Left"  class="LogoImg"/>-->
+                <span class="currentDateHomeRight">
+                <table class="sTbl" style="vertical-align:top;">
+                    <tr>
+                        <td style="text-align:right; margin-right:3px; margin-bottom:0px; padding-bottom:0px; padding-top:0px;"><span id="lblCurrentWeekDay" style="font-family:Verdana; font-size:18px; font-weight:normal; margin:0px; padding:0px; vertical-align:top;"></span></td>
+                        <td rowspan="2" style="text-align:left; margin-left:3px; padding-left:10px; padding-top:0px;"><span id="lblCurrentTime2" style="font-family:Arial Narrow; font-size:50px; margin:0px;"></span></td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:right; margin-right:3px; margin-bottom:0px; padding-bottom:0px; padding-top:0px;"><span id="lblCurrentDate2" style="font-family:Verdana; font-weight:normal; font-size:18px; margin:0px; padding-top:0px;vertical-align:top;"></span></td>                        
+                    </tr>
+                    <!--<tr><td colspan="2"><span class="versionTxt">version: 2.73.92</span></td></tr>-->
+                </table>
+                </span>
+            </td>
+        </tr>
+        <tr id="externalBanner" style="display:none;">
+            <td style="padding-top:2px;"><img src="Images/GOBannerDateTimeLogo.JPG" alt="GO Logo Image" class="LogoImg"/>
+            <span class="currentTimeHome">
+            <span id="lblCurrentDate" style="font-size:28px; margin-bottom:3px; padding-bottom:3px;"></span><br style="line-height: 1em; line-height:3px;" />
+            <span id="lblCurrentTime"></span></span></td>
+            <td >
+                    <Items>
+                            <ItemTemplate>
+                                <img id="Image1" class="LogoImg" src="images/GOBusBannerImg.jpg" />
+                            </ItemTemplate>
+                            <ItemTemplate>
+                                <img id="Image2" class="LogoImg" src="images/GOTrainBannerImg.jpg" />
+                            
+                            </ItemTemplate>
+                    </Items>
+                    <Items>
+                            <ItemTemplate>
+                            </ItemTemplate>
+                    </Items>
+            </td>
+            <td  style="padding-top:2px; background-color:White;">
+                <img src="Images/BannerRightLogo.jpg" alt="GO Logo Image Left"  class="LogoImg"/>
+            </td>
+            <td align="right" style="width:100%; padding-top:2px; background-color:White;">
+                <table class="sTbl2" style="background:url(images/bannerBackground.jpg); background-repeat:repeat;">
+                <tr class="sTbl2"><td class="sTbl2" style="background:url(images/bannerBackground.jpg); background-repeat:repeat;">
+                    <img src="Images/GOTrackerLogo.jpg" alt="GO Logo Image Left"  class="LogoImg"/>                    
+                    </td>
+                </tr>
+                <!--<tr><td><span class="versionTxt">version: 2.73.92</span></td></tr>-->
+                </table>
+            </td>
+        </tr>
+        
+    </table> 
+    </div>
+    </td></tr>
+                
+    <tr class="sTbl2" style="top: 0; margin:0; padding:0; "><td style="width: 100%; height: 98%;" class="sTbl2">
+    <div style="background-color:white; height:93%; top:0; vertical-align:top; margin:0; padding:0;">
+        
+<span style="color:Red;">*Sorry! We are experience some techincal difficulty, please try again later!</span>
+
+    </div>
+    </td></tr>    
+    </table>
+<script type="text/javascript">
+    var currentImg = "bus";
+    var lang = ''.substring(0, 2);
+
+    function getCurrentTime() {
+        var currentTime = new Date();
+        var hours = currentTime.getHours();
+        var minutes = currentTime.getMinutes();
+        if (minutes < 10) {
+            minutes = "0" + minutes;
+        }
+        var rtn = hours + ":" + minutes;
+        return rtn;
+    }
+
+    function getCurrentDate() {
+        var currentDate = new Date();
+        var mth = currentDate.getMonth();
+        var day = currentDate.getDate();
+        var monthsFr = ["janv", "févr", "mars", "avril", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
+        var formattedDate = currentDate.format("MMM dd");
+        
+        if (lang == 'fr'){
+            formattedDate = day + ' ' + monthsFr[mth];
+        }
+        return formattedDate;
+    }
+
+    function getCurrentDateLabel() {
+        return getCurrentWeekday() + '&nbsp;' + getCurrentDate();
+    }
+
+    function getCurrentDateLabel2() {
+        return getCurrentDate() + '&nbsp;' + getCurrentWeekday();
+    }
+
+    function getCurrentWeekday() {
+        var currentDate = new Date();
+        var iWkDay = currentDate.getDay();
+        var wkDay = 'WEEKDAY';
+        var wkDayList = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        var wkDayfr = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VAN', 'SAM'];
+
+        if (lang == 'fr') {
+            wkDayList = wkDayfr;
+        }
+
+        wkDay = wkDayList[iWkDay];
+        return wkDay;
+    }
+
+    function ChangeCursor(tableRow) {
+        tableRow.style.cursor = 'pointer';
+    }
+
+    function BlockUI() {
+        $.blockUI({
+            message: $('#wait'),
+            css: {
+                top: ($(window).height() - 200) / 2 + 'px',
+                left: ($(window).width() - 200) / 2 + 'px',
+                width: '200px',
+                height: '200px'
+            }
+        });
+    }
+
+    function UnBlockUI() {
+        $.unblockUI();
+    }
+
+    function setCookie(c_name, value, exdays) {
+        var exdate = new Date();
+        exdate.setDate(exdate.getDate() + exdays);
+        var c_value = escape(value) + ((exdays == null) ? "" : "; expires=" + exdate.toUTCString());
+        document.cookie = c_name + "=" + c_value;
+    }
+
+    function getCookie(c_name) {
+        var i, x, y, ARRcookies = document.cookie.split(";");
+        for (i = 0; i < ARRcookies.length; i++) {
+            var idx = $.inArray('=', ARRcookies[i]);
+            if (idx > 0) {
+                x = ARRcookies[i].substr(0, idx);
+                y = ARRcookies[i].substr(idx + 1);
+                x = x.replace(/^\s+|\s+$/g, "");
+            }
+            if (x == c_name) {
+                return unescape(y);
+            }
+        }
+    }
+
+    function setCurrentTime() {      
+        var myTime = getCurrentTime();
+        var myDate = getCurrentDateLabel();
+        var myDate2 = getCurrentDate();
+        var myWkDay = getCurrentWeekday();
+        $('#lblCurrentTime').html(myTime);
+        $('#lblCurrentDate').html(myDate);
+        $('#lblCurrentTime2').html(myTime);
+        $('#lblCurrentDate2').html(myDate2);
+        $('#lblCurrentWeekDay').html(myWkDay);
+    }
+
+    function switchLogoImg() {
+        var busLogo = $('#goBusLogo');
+        var trainLogo = $('#goTrainLogo');
+
+        if (currentImg == 'bus') {
+            currentImg = "train";
+            busLogo.hide();
+            trainLogo.show();
+        }
+        else {
+            currentImg = "bus";
+            busLogo.show();
+            trainLogo.hide();
+        }
+    }
+
+    
+    
+</script>
+
+
+</form>
+</body>
+</html>
+
