@@ -7,8 +7,13 @@ const SQLITE_DB_FILE = `${SQLite.defaultDatabaseDirectory}${SQLITE_DB_NAME}`;
 const SQLITE_META_FILE = `${FileSystem.documentDirectory}go-gtfs-v1-meta.json`;
 const SQLITE_UPDATE_FILE = `${FileSystem.documentDirectory}go-gtfs-v1-update.json`;
 
-const MANIFEST_URL = (process.env.EXPO_PUBLIC_GTFS_SQLITE_MANIFEST_URL || '').trim();
-const FALLBACK_DB_URL = (process.env.EXPO_PUBLIC_GTFS_SQLITE_DB_URL || '').trim();
+const DEFAULT_MANIFEST_URL =
+  'https://github.com/harpreetmailsgh/TrackTransit/releases/download/gtfs-data/manifest.json';
+const DEFAULT_DB_URL =
+  'https://github.com/harpreetmailsgh/TrackTransit/releases/download/gtfs-data/go-gtfs-v1.sqlite';
+
+const MANIFEST_URL = (process.env.EXPO_PUBLIC_GTFS_SQLITE_MANIFEST_URL || DEFAULT_MANIFEST_URL).trim();
+const FALLBACK_DB_URL = (process.env.EXPO_PUBLIC_GTFS_SQLITE_DB_URL || DEFAULT_DB_URL).trim();
 
 function hasAnyUrl() {
   return Boolean(MANIFEST_URL || FALLBACK_DB_URL);
