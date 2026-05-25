@@ -214,6 +214,12 @@ export function GtfsDataProvider({ children }) {
 
         await Promise.race([
           loadGtfs({
+            onSchedulesReady: () => {
+              if (!cancelled) {
+                setSchedulesReady(true);
+                appendStartupTrace('75% | startup schedules ready');
+              }
+            },
             onProgress: (update) => {
               const m =
                 (typeof update === 'string' ? update : update?.message) ||

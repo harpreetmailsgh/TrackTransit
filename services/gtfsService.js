@@ -20,9 +20,12 @@ import {
   checkHostedSqliteUpdate,
   clearPendingHostedSqliteUpdate,
   ensureHostedSqlite,
+  getBundleMeta,
+  getEffectiveCoverageEnd,
   getPendingHostedSqliteUpdate,
   isHostedSqliteConfigured,
-  loadHostedGtfsRows,
+  loadHostedCoreTables,
+  loadHostedSchedulesForDates,
   setPendingHostedSqliteUpdate,
 } from './gtfsSqliteService';
 
@@ -94,8 +97,13 @@ let busShapePolylines = [];
 let loadPromise = null;
 let backgroundRefreshPromise = null;
 let isReadyFlag = false;
+let schedulesReadyFlag = false;
 /** Incremented when a load is abandoned (e.g. UI timeout) so late completions do not flip `isReadyFlag`. */
 let loadGeneration = 0;
+/** Tracks which date/mode schedule slices are in memory (`ymd:train` / `ymd:bus`). */
+const loadedScheduleKeys = new Set();
+/** Cached bundle meta from hosted SQLite download. */
+let cachedBundleMeta = null;
 let startupPhase = 'idle';
 let startupPhaseDetail = '(not started)';
 let startupPhaseUpdatedAt = 0;
@@ -306,7 +314,111 @@ export function invalidateActiveGtfsLoad() {
   loadGeneration += 1;
   loadPromise = null;
   isReadyFlag = false;
+  schedulesReadyFlag = false;
   logGtfs('invalidateActiveGtfsLoad', { generation: loadGeneration });
+}
+
+export function isSchedulesReady() {
+  return schedulesReadyFlag;
+}
+
+export function clearLoadedScheduleKeys() {
+  loadedScheduleKeys.clear();
+  stopTimesByStopId = new Map();
+  stopTimesByTripId = new Map();
+  tripsById = new Map();
+  routeTypesByStopId = new Map();
+}
+
+function addDaysYmd(ymd, days) {
+  return DateTime.fromFormat(ymd, 'yyyyMMdd', { zone: 'America/Toronto' })
+    .plus({ days })
+    .toFormat('yyyyMMdd');
+}
+
+function getCoverageEndYmd() {
+  const end = getEffectiveCoverageEnd(cachedBundleMeta);
+  return end || torontoTodayYmd();
+}
+
+function getSlidingWindowDates(centerYmd, radius = 3) {
+  const today = torontoTodayYmd();
+  const coverageEnd = getCoverageEndYmd();
+  const monthStart = cachedBundleMeta?.month?.startDate || today;
+  let minYmd = addDaysYmd(centerYmd, -radius);
+  let maxYmd = addDaysYmd(centerYmd, radius);
+  if (minYmd < today) minYmd = today;
+  if (maxYmd > coverageEnd) maxYmd = coverageEnd;
+  if (minYmd < monthStart) minYmd = monthStart;
+
+  const dates = [];
+  let dt = DateTime.fromFormat(minYmd, 'yyyyMMdd', { zone: 'America/Toronto' });
+  const endDt = DateTime.fromFormat(maxYmd, 'yyyyMMdd', { zone: 'America/Toronto' });
+  while (dt <= endDt) {
+    dates.push(dt.toFormat('yyyyMMdd'));
+    dt = dt.plus({ days: 1 });
+  }
+  return dates;
+}
+
+export function getPlanningDateBounds() {
+  const today = torontoTodayYmd();
+  const coverageEnd = getCoverageEndYmd();
+  let feedMax = coverageEnd;
+  for (const row of calendarDatesRows) {
+    const d = String(row.date || '');
+    if (d > feedMax) feedMax = d;
+  }
+  for (const row of calendarRows) {
+    const d = String(row.end_date || '');
+    if (d > feedMax) feedMax = d;
+  }
+  const maxYmd = coverageEnd < feedMax ? coverageEnd : feedMax;
+  return { minYmd: today, maxYmd: maxYmd || today };
+}
+
+function modesToScheduleFilter(modes) {
+  if (!modes) return { train: true, bus: true };
+  return {
+    train: modes.train !== false,
+    bus: modes.bus !== false,
+  };
+}
+
+function markLoadedKeysForDates(dates, modes) {
+  for (const ymd of dates) {
+    if (modes.train) loadedScheduleKeys.add(`${ymd}:train`);
+    if (modes.bus) loadedScheduleKeys.add(`${ymd}:bus`);
+  }
+}
+
+function datesNeedingLoad(dates, modes) {
+  const missingDates = new Set();
+  for (const ymd of dates) {
+    if (modes.train && !loadedScheduleKeys.has(`${ymd}:train`)) missingDates.add(ymd);
+    if (modes.bus && !loadedScheduleKeys.has(`${ymd}:bus`)) missingDates.add(ymd);
+  }
+  return [...missingDates];
+}
+
+export async function ensureSchedulesForDate(ymd, options = {}) {
+  const modes = modesToScheduleFilter(options.modes);
+  const windowDates = getSlidingWindowDates(ymd, 3);
+  const toLoad = datesNeedingLoad(windowDates, modes);
+  if (!toLoad.length) {
+    return { ok: true, loaded: false };
+  }
+
+  const schedule = await loadHostedSchedulesForDates(
+    toLoad,
+    modes,
+    activeServiceIdsForDate,
+    options.onProgress,
+  );
+  await appendScheduleData(schedule.trips, schedule.stopTimes);
+  await finalizeStopTimeTripIndexes();
+  markLoadedKeysForDates(toLoad, modes);
+  return { ok: true, loaded: true };
 }
 
 function extractRemoteFingerprint(res) {
@@ -761,17 +873,39 @@ async function rebuildRouteTypesByStopId() {
   }
 }
 
-async function hydrateFromPlainObject(data) {
+async function hydrateCoreData(data) {
   stopsById = new Map((data.stops || []).map((s) => [String(s.stop_id), s]));
   routesById = new Map((data.routes || []).map((r) => [String(r.route_id), r]));
-  tripsById = new Map((data.trips || []).map((t) => [String(t.trip_id), t]));
+  tripsById = new Map();
+  stopTimesByStopId = new Map();
+  stopTimesByTripId = new Map();
+  routeTypesByStopId = new Map();
   pathways = data.pathways || [];
   calendarRows = data.calendar || [];
   calendarDatesRows = data.calendarDates || [];
-  await buildStopTimeIndexes(data.stopTimes || []);
-  await rebuildRouteTypesByStopId();
   trainShapePolylines = Array.isArray(data.trainPolylines) ? data.trainPolylines : [];
   busShapePolylines = Array.isArray(data.busPolylines) ? data.busPolylines : [];
+}
+
+async function appendScheduleData(trips, stopTimes) {
+  for (const trip of trips || []) {
+    tripsById.set(String(trip.trip_id), trip);
+  }
+  let rowsProcessed = 0;
+  for (const st of stopTimes || []) {
+    appendStopTimeRowToIndexes(st);
+    rowsProcessed += 1;
+    if (rowsProcessed % YIELD_INDEX_INTERVAL === 0) {
+      await yieldToJsLoop();
+    }
+  }
+  await rebuildRouteTypesByStopId();
+}
+
+async function hydrateFromPlainObject(data) {
+  await hydrateCoreData(data);
+  await appendScheduleData(data.trips || [], data.stopTimes || []);
+  await finalizeStopTimeTripIndexes();
 }
 
 /**
@@ -1376,15 +1510,45 @@ async function loadFromHostedSqlite(onProgress, options = {}) {
     throw new Error('Hosted schedules database is not configured.');
   }
 
+  cachedBundleMeta = await getBundleMeta();
+  loadedScheduleKeys.clear();
+
   setStartupPhase('sqlite-load', 'Loading schedules from SQLite');
-  const payload = await loadHostedGtfsRows((event) => {
+  const core = await loadHostedCoreTables((event) => {
     if (!event) return;
     const msg = typeof event === 'string' ? event : event.message;
     const pct = typeof event === 'object' ? Number(event.percent) : NaN;
     emitProgress(onProgress, msg || 'Loading schedules database...', Number.isFinite(pct) ? pct : undefined);
   });
 
-  await hydrateFromPlainObject(payload);
+  await hydrateCoreData(core);
+  emitProgress(onProgress, 'Loading startup schedules...', 0.55);
+
+  const today = torontoTodayYmd();
+  const startupDates = [];
+  for (let i = 0; i < 7; i += 1) {
+    startupDates.push(addDaysYmd(today, i));
+  }
+
+  const startupModes = { train: true, bus: true };
+  const schedule = await loadHostedSchedulesForDates(
+    startupDates,
+    startupModes,
+    activeServiceIdsForDate,
+    (event) => {
+      if (!event) return;
+      const msg = typeof event === 'string' ? event : event.message;
+      const pct = typeof event === 'object' ? Number(event.percent) : NaN;
+      emitProgress(onProgress, msg || 'Loading schedules...', Number.isFinite(pct) ? pct : undefined);
+    },
+  );
+
+  await appendScheduleData(schedule.trips, schedule.stopTimes);
+  await finalizeStopTimeTripIndexes();
+  markLoadedKeysForDates(startupDates, startupModes);
+
+  schedulesReadyFlag = true;
+  options.onSchedulesReady?.();
   emitProgress(onProgress, 'Schedules database ready', 0.99);
 }
 
@@ -1579,10 +1743,11 @@ export async function applyPendingGtfsUpdate(options = {}) {
  * @param {{ onProgress?: (msg: string) => void }} [options]
  */
 export function loadGtfs(options = {}) {
-  const { onProgress } = options;
+  const { onProgress, onSchedulesReady } = options;
   if (loadPromise) return loadPromise;
 
   const seq = loadGeneration;
+  schedulesReadyFlag = false;
 
   loadPromise = (async () => {
     try {
@@ -1591,7 +1756,7 @@ export function loadGtfs(options = {}) {
       let loadedFromCache = false;
 
       if (isHostedSqliteConfigured()) {
-        await loadFromHostedSqlite(onProgress);
+        await loadFromHostedSqlite(onProgress, { onSchedulesReady });
       } else {
         const info = await FileSystem.getInfoAsync(CACHE_FILE);
         logGtfs('loadGtfs: cache check', { exists: info.exists, size: info.size });
@@ -1619,6 +1784,10 @@ export function loadGtfs(options = {}) {
       }
 
       isReadyFlag = true;
+      if (!schedulesReadyFlag) {
+        schedulesReadyFlag = true;
+        onSchedulesReady?.();
+      }
       setStartupPhase('ready', 'GTFS load complete');
       logGtfs('loadGtfs: success, isReadyFlag = true');
 
@@ -1655,11 +1824,14 @@ export function isGtfsReady() {
  */
 export async function reloadGtfsFromCache() {
   if (isHostedSqliteConfigured()) {
+    clearLoadedScheduleKeys();
+    schedulesReadyFlag = false;
     await loadFromHostedSqlite(null, { forceDownload: false });
     logGtfs('reloadGtfsFromCache: refreshed from hosted SQLite database');
     return;
   }
   await loadFromCache(null);
+  schedulesReadyFlag = true;
   logGtfs('reloadGtfsFromCache: in-memory stores refreshed from new cache');
 }
 

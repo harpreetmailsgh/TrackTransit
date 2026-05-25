@@ -7,7 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "gtfs:build-sqlite": "node ./scripts/build-gtfs-sqlite.mjs"
+    "gtfs:build-sqlite": "node ./scripts/build-gtfs-sqlite.mjs",
+    "gtfs:verify-sqlite": "node ./scripts/verify-gtfs-sqlite.mjs"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.9",

@@ -13,12 +13,16 @@ import { useGtfsData } from './GtfsDataContext';
 import {
   applyPendingGtfsUpdate,
   checkForGtfsStaticUpdate,
+  clearLoadedScheduleKeys,
   getPendingGtfsUpdate,
   markGtfsUpdatePrompted,
   reloadGtfsFromCache,
   snoozePendingGtfsUpdate,
   usesHostedGtfsSqlite,
 } from '../services/gtfsService';
+import { getBundleMeta } from '../services/gtfsSqliteService';
+
+const HOSTED_CHECK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const SNOOZE_MS = 30 * 60 * 1000;
 const GO_GREEN = '#00853F';
@@ -186,6 +190,9 @@ export function GtfsUpdateProvider({ children }) {
 
       setProgressPercent(1);
       setProgressMessage('Applying updated schedules...');
+      if (usesHostedGtfsSqlite()) {
+        clearLoadedScheduleKeys();
+      }
       await reloadGtfsFromCache();
       setUpdateInfo(null);
 
@@ -205,6 +212,14 @@ export function GtfsUpdateProvider({ children }) {
     } finally {
       refreshInFlightRef.current = false;
     }
+  }, []);
+
+  const shouldRunHostedCheck = useCallback(async () => {
+    if (!usesHostedGtfsSqlite()) return true;
+    const meta = await getBundleMeta();
+    const last = Number(meta?.lastCheckAt || meta?.checkedAt || 0);
+    if (!last) return true;
+    return Date.now() - last >= HOSTED_CHECK_INTERVAL_MS;
   }, []);
 
   const syncUpdateState = useCallback(async (allowCheck) => {
@@ -237,6 +252,12 @@ export function GtfsUpdateProvider({ children }) {
       return;
     }
 
+    if (!(await shouldRunHostedCheck())) {
+      setUpdateInfo(null);
+      setUpdateState('idle');
+      return;
+    }
+
     setUpdateState('checking');
     const result = await checkForGtfsStaticUpdate();
     if (result?.status === 'update-available' && result.update) {
@@ -254,7 +275,7 @@ export function GtfsUpdateProvider({ children }) {
 
     setUpdateInfo(null);
     setUpdateState('idle');
-  }, [runRefresh, silentHostedUpdates]);
+  }, [runRefresh, shouldRunHostedCheck, silentHostedUpdates]);
 
   useEffect(() => {
     if (!ready || error) return;
@@ -269,16 +290,21 @@ export function GtfsUpdateProvider({ children }) {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active' && ready && !error) {
-        syncUpdateState(true).catch(() => {
-          setUpdateState((current) => (current === 'downloading' ? current : 'idle'));
-        });
+        shouldRunHostedCheck()
+          .then((due) => {
+            if (!due) return;
+            return syncUpdateState(true);
+          })
+          .catch(() => {
+            setUpdateState((current) => (current === 'downloading' ? current : 'idle'));
+          });
       }
     });
 
     return () => {
       sub.remove();
     };
-  }, [ready, error, syncUpdateState]);
+  }, [ready, error, shouldRunHostedCheck, syncUpdateState]);
 
   useEffect(() => {
     if (updateState !== 'completed') return undefined;

@@ -28,9 +28,11 @@ jobs:
       - name: Build GTFS SQLite
         env:
           GTFS_VERSION: ${{ github.run_number }}-${{ github.run_attempt }}
-          GTFS_DB_FILENAME: go-gtfs-v1.sqlite
-          GTFS_DB_URL: https://github.com/${{ github.repository }}/releases/download/gtfs-data/go-gtfs-v1.sqlite
+          GTFS_RELEASE_BASE: https://github.com/${{ github.repository }}/releases/download/gtfs-data
         run: npm run gtfs:build-sqlite
+
+      - name: Verify GTFS SQLite
+        run: npm run gtfs:verify-sqlite
 
       - name: Publish release assets
         uses: softprops/action-gh-release@v2
@@ -42,5 +44,7 @@ jobs:
           make_latest: false
           overwrite_files: true
           files: |
-            dist/gtfs/go-gtfs-v1.sqlite
+            dist/gtfs/go-gtfs-core.sqlite
+            dist/gtfs/go-gtfs-month.sqlite
+            dist/gtfs/go-gtfs-week-*.sqlite
             dist/gtfs/manifest.json

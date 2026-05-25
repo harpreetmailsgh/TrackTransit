@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import SleekHeaderBar from '../../components/SleekHeaderBar';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,6 +22,7 @@ import {
 } from '../../services/savedTripsService';
 
 import {
+  ensureSchedulesForDate,
   getDeparturesForDate,
   getDeparturesForStop,
   getTripsFromTo,
@@ -76,6 +77,38 @@ export default function SavedScreen() {
   const { ready } = useGtfsData();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [savedSchedulesEpoch, setSavedSchedulesEpoch] = useState(0);
+
+  useEffect(() => {
+    if (!ready || !items.length) return undefined;
+    let cancelled = false;
+    const modes = { train: true, bus: true };
+    const now = DateTime.now().setZone('America/Toronto');
+
+    (async () => {
+      const seen = new Set();
+      for (const item of items) {
+        const targetDate = String(item?.serviceDate || '').trim();
+        const anchor = targetDate
+          ? DateTime.fromISO(targetDate).setZone('America/Toronto')
+          : now;
+        const startDate = anchor < now.startOf('day') ? now.startOf('day') : anchor.startOf('day');
+        for (let dayOffset = 0; dayOffset <= SLOT_LOOKAHEAD_DAYS; dayOffset += 1) {
+          const ymd = startDate.plus({ days: dayOffset }).toFormat('yyyyMMdd');
+          if (seen.has(ymd)) continue;
+          seen.add(ymd);
+          await ensureSchedulesForDate(ymd, { modes });
+        }
+      }
+      if (!cancelled) setSavedSchedulesEpoch((n) => n + 1);
+    })().catch(() => {
+      if (!cancelled) setSavedSchedulesEpoch((n) => n + 1);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, items]);
 
   const loadSaved = useCallback(async () => {
     try {
@@ -211,7 +244,7 @@ export default function SavedScreen() {
       map.set(item.key, getNextTripForTemplate(item));
     }
     return map;
-  }, [getNextTripForTemplate, items, ready]);
+  }, [getNextTripForTemplate, items, ready, savedSchedulesEpoch]);
 
   const openTrip = useCallback(
     (item) => {

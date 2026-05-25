@@ -27,6 +27,7 @@ import { DateTime } from 'luxon';
 
 import { useGtfsData } from '../../contexts/GtfsDataContext';
 import {
+  ensureSchedulesForDate,
   getDeparturesForStop,
   getPlatformForTrip,
   getTripsFromTo,
@@ -34,7 +35,7 @@ import {
   searchStops,
   getDeparturesForDate,
   getStopRouteTypes,
-  // For patch:
+  getPlanningDateBounds,
   getTripStops,
 } from '../../services/gtfsService';
 import { getLiveDepartures, getDelayForStop, getTripIdsWithLiveUpdates, getRealtimeLastUpdatedMs } from '../../services/gtfsRealtimeService';
@@ -111,6 +112,95 @@ const pillStyles = StyleSheet.create({
   },
 });
 
+function MonthCalendar({
+  visibleMonth,
+  selectedYmd,
+  minYmd,
+  maxYmd,
+  onSelect,
+  onMonthChange,
+}) {
+  const monthStart = visibleMonth.startOf('month');
+  const monthLabel = monthStart.toFormat('MMMM yyyy');
+  const gridStart = monthStart.startOf('week');
+  const cells = [];
+  let cursor = gridStart;
+  for (let i = 0; i < 42; i += 1) {
+    cells.push(cursor);
+    cursor = cursor.plus({ days: 1 });
+  }
+
+  const prevMonth = monthStart.minus({ months: 1 });
+  const nextMonth = monthStart.plus({ months: 1 });
+  const canGoPrev = prevMonth.endOf('month').toFormat('yyyyMMdd') >= minYmd;
+  const canGoNext = nextMonth.startOf('month').toFormat('yyyyMMdd') <= maxYmd;
+
+  return (
+    <View>
+      <View style={styles.calendarNav}>
+        <TouchableOpacity
+          disabled={!canGoPrev}
+          onPress={() => canGoPrev && onMonthChange(prevMonth)}
+          style={[styles.calendarNavBtn, !canGoPrev && styles.calendarNavBtnDisabled]}
+        >
+          <MaterialIcons name="chevron-left" size={22} color={canGoPrev ? GO_GREEN : '#ccc'} />
+        </TouchableOpacity>
+        <Text style={styles.calendarMonthLabel}>{monthLabel}</Text>
+        <TouchableOpacity
+          disabled={!canGoNext}
+          onPress={() => canGoNext && onMonthChange(nextMonth)}
+          style={[styles.calendarNavBtn, !canGoNext && styles.calendarNavBtnDisabled]}
+        >
+          <MaterialIcons name="chevron-right" size={22} color={canGoNext ? GO_GREEN : '#ccc'} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.calendarWeekdays}>
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label) => (
+          <Text key={label} style={styles.calendarWeekday}>
+            {label}
+          </Text>
+        ))}
+      </View>
+
+      <View style={styles.calendarGrid}>
+        {cells.map((day) => {
+          const ymd = day.toFormat('yyyyMMdd');
+          const inMonth = day.month === monthStart.month;
+          const selectable = inMonth && ymd >= minYmd && ymd <= maxYmd;
+          const isSelected = ymd === selectedYmd;
+          if (!inMonth) {
+            return <View key={ymd + day.weekNumber} style={styles.calendarCellEmpty} />;
+          }
+          return (
+            <TouchableOpacity
+              key={ymd}
+              disabled={!selectable}
+              style={[
+                styles.calendarCell,
+                isSelected && styles.calendarCellSelected,
+                !selectable && styles.calendarCellDisabled,
+              ]}
+              onPress={() => selectable && onSelect(ymd)}
+              activeOpacity={selectable ? 0.85 : 1}
+            >
+              <Text
+                style={[
+                  styles.calendarCellText,
+                  isSelected && styles.calendarCellTextSelected,
+                  !selectable && styles.calendarCellTextDisabled,
+                ]}
+              >
+                {day.day}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 // ── main component ─────────────────────────────────────────────────────────
 
 export default function SearchScreen() {
@@ -134,6 +224,16 @@ export default function SearchScreen() {
   const [selectedModes, setSelectedModes] = useState({ train: true, bus: false });
   const [selectedDate, setSelectedDate] = useState(DateTime.now().setZone('America/Toronto').toFormat('yyyyMMdd'));
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(DateTime.now().setZone('America/Toronto').startOf('month'));
+  const [schedulesForSearchReady, setSchedulesForSearchReady] = useState(true);
+
+  const dateBounds = useMemo(() => {
+    if (!ready) {
+      const today = DateTime.now().setZone('America/Toronto').toFormat('yyyyMMdd');
+      return { minYmd: today, maxYmd: today };
+    }
+    return getPlanningDateBounds();
+  }, [ready, selectedDate]);
 
   const stopMatchesSelectedModes = useCallback((stop) => {
     const routeTypes = getStopRouteTypes(stop?.stop_id);
@@ -150,6 +250,32 @@ export default function SearchScreen() {
     const id = setInterval(() => setLiveTick((n) => n + 1), 30000);
     return () => clearInterval(id);
   }, [ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const { minYmd, maxYmd } = dateBounds;
+    setSelectedDate((current) => {
+      if (current < minYmd) return minYmd;
+      if (current > maxYmd) return maxYmd;
+      return current;
+    });
+  }, [ready, dateBounds.minYmd, dateBounds.maxYmd]);
+
+  useEffect(() => {
+    if (!ready) return undefined;
+    let cancelled = false;
+    setSchedulesForSearchReady(false);
+    ensureSchedulesForDate(selectedDate, { modes: selectedModes })
+      .then(() => {
+        if (!cancelled) setSchedulesForSearchReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setSchedulesForSearchReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, selectedDate, selectedModes]);
 
   useEffect(() => {
     let cancelled = false;
@@ -320,7 +446,7 @@ export default function SearchScreen() {
 
   // Results computation
   const results = useMemo(() => {
-    if (!ready || !fromStop) return [];
+    if (!ready || !fromStop || !schedulesForSearchReady) return [];
     if (!selectedModes.train && !selectedModes.bus) return [];
 
     const today = DateTime.now().setZone('America/Toronto').toFormat('yyyyMMdd');
@@ -517,7 +643,7 @@ export default function SearchScreen() {
     }
 
     return filtered;
-  }, [ready, fromStop, toStop, liveTick, selectedDate, selectedModes, metrolinxByTrip]);
+  }, [ready, schedulesForSearchReady, fromStop, toStop, liveTick, selectedDate, selectedModes, metrolinxByTrip]);
 
   const displayResults = results;
 
@@ -687,31 +813,17 @@ export default function SearchScreen() {
                   <Text style={styles.dateQuickSelectText}>Today</Text>
                 </TouchableOpacity>
 
-                <ScrollView style={styles.datePickerList} nestedScrollEnabled>
-                  {Array.from({ length: 14 }).map((_, i) => {
-                    const dt = DateTime.now()
-                      .setZone('America/Toronto')
-                      .plus({ days: i })
-                      .startOf('day');
-                    const ymd = dt.toFormat('yyyyMMdd');
-                    const isSelected = ymd === selectedDate;
-                    return (
-                      <TouchableOpacity
-                        key={ymd}
-                        style={[styles.dateOption, isSelected && styles.dateOptionSelected]}
-                        onPress={() => {
-                          setSelectedDate(ymd);
-                          setDatePickerOpen(false);
-                        }}
-                        activeOpacity={0.85}
-                      >
-                        <Text style={[styles.dateOptionText, isSelected && styles.dateOptionTextSelected]}>
-                          {dt.toFormat('EEE, MMM d')}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
+                <MonthCalendar
+                  visibleMonth={calendarMonth}
+                  selectedYmd={selectedDate}
+                  minYmd={dateBounds.minYmd}
+                  maxYmd={dateBounds.maxYmd}
+                  onSelect={(ymd) => {
+                    setSelectedDate(ymd);
+                    setDatePickerOpen(false);
+                  }}
+                  onMonthChange={(month) => setCalendarMonth(month.startOf('month'))}
+                />
               </View>
             </View>
           )}
@@ -1266,6 +1378,67 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: GO_GREEN,
+  },
+  calendarNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  calendarNavBtn: {
+    padding: 4,
+  },
+  calendarNavBtnDisabled: {
+    opacity: 0.4,
+  },
+  calendarMonthLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#222',
+  },
+  calendarWeekdays: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  calendarWeekday: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#888',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarCell: {
+    width: '14.2857%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  calendarCellEmpty: {
+    width: '14.2857%',
+    aspectRatio: 1,
+  },
+  calendarCellSelected: {
+    backgroundColor: GO_GREEN,
+  },
+  calendarCellDisabled: {
+    opacity: 0.35,
+  },
+  calendarCellText: {
+    fontSize: 14,
+    color: '#222',
+    fontWeight: '500',
+  },
+  calendarCellTextSelected: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  calendarCellTextDisabled: {
+    color: '#999',
   },
   datePickerList: {
     maxHeight: 250,
