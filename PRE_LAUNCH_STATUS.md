@@ -1,14 +1,14 @@
-# TrackTransit v1.0.0 - Pre-Launch Status Report
+# Transit Scanner v1.1.0 - Pre-Launch Status Report
 
 **Generated:** May 2, 2026  
-**Version:** 1.0.0  
+**Version:** 1.1.0  
 **Status:** Ready for Production Build
 
 ---
 
 ## Executive Summary
 
-TrackTransit v1.0.0 is production-ready. All core functionality has been implemented, tested, and optimized. The app successfully provides real-time GO Transit tracking with search, saved routes, and trip details. Notification infrastructure is prepared for v2 backend integration.
+Transit Scanner v1.1.0 is production-ready. All core functionality has been implemented, tested, and optimized. The app successfully provides real-time GO Transit tracking with search, saved routes, and trip details. Notification infrastructure is prepared for v2 backend integration.
 
 ---
 
@@ -43,9 +43,9 @@ TrackTransit v1.0.0 is production-ready. All core functionality has been impleme
 - [x] Graceful degradation (app works without location)
 
 ### ✅ App Metadata
-- [x] Version 1.0.0 configured in app.json
-- [x] iOS buildNumber set to 1
-- [x] Android versionCode set to 1
+- [x] Version 1.1 configured in app.json
+- [x] iOS buildNumber set to 2
+- [x] Android versionCode set to 2
 - [x] All platform-specific permissions listed
 - [x] Notification usage descriptions added
 - [x] Location usage descriptions added
@@ -69,7 +69,7 @@ TrackTransit v1.0.0 is production-ready. All core functionality has been impleme
 ## Files Structure
 
 ```
-TrackTransit/
+Transit Scanner/
 ├── app/
 │   ├── (tabs)/
 │   │   ├── index.jsx          ✅ Home/Map screen
@@ -151,7 +151,7 @@ TrackTransit/
 ### Immediate (Day 1)
 1. ✅ Set up EAS credentials (Apple Developer, Google Play)
 2. ✅ Configure eas.json with API keys
-3. ✅ Host Privacy Policy at https://tracktransit.app/privacy
+3. ✅ Host Privacy Policy at https://transitscanner.app/privacy
 4. ✅ Update app.json with privacy policy URL
 
 ### Build Phase (Day 2-3)
@@ -218,9 +218,9 @@ npm run web      # Web browser
 
 ## Support & Contact
 
-**Email:** support@tracktransit.app  
-**Website:** https://tracktransit.app  
-**Privacy Policy:** https://tracktransit.app/privacy (to be hosted)
+**Email:** therobinhood289@gmail.com  
+**Website:** https://transitscanner.app  
+**Privacy Policy:** https://transitscanner.app/privacy (to be hosted)
 
 ---
 

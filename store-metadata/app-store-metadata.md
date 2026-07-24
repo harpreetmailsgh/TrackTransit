@@ -1,33 +1,35 @@
 # iOS App Store Metadata
 
 ## App Name
-TrackTransit
+Transit Scanner
 
 ## Subtitle (30 characters max)
 Live Transit Tracking
 
 ## Description
-Track real-time transit delays and save your favorite routes with live delay notifications.
+Track GO Transit schedules, vehicle locations, and saved trips for your commute.
 
-TrackTransit makes commuting smarter by showing you exactly where your bus or train is right now. See live delay information for GO Transit routes in the Greater Toronto Area, search for any trip, and save your favorite routes for quick access.
+Transit Scanner makes commuting smarter by helping you follow GO Transit routes in the Greater Toronto Area. View schedule details, real-time vehicle and delay information where available, search for trips, and save routes for quick access.
 
 **Key Features:**
 - Real-time location tracking for GO Transit vehicles
-- Live delay notifications for saved routes
+- Optional active-ride get-off reminders
 - Search and filter by stop, route, or destination
 - Save favorite trips for quick access
 - Beautiful, intuitive map interface
 
-Perfect for daily commuters who want reliable, up-to-the-minute transit information at their fingertips.
+Perfect for daily commuters who want useful transit information at their fingertips.
+
+Transit Scanner is an independent app and is not affiliated with, endorsed by, or sponsored by Metrolinx or GO Transit.
 
 ## Keywords
 transit, GO Transit, Toronto, GTA, real-time tracking, delays, commute, bus, train, route planner, location
 
 ## Support URL
-https://tracktransit.app/support
+https://transitscanner.app/support
 
 ## Privacy Policy URL
-https://tracktransit.app/privacy
+https://transitscanner.app/privacy
 
 ## Category
 Navigation
@@ -50,6 +52,6 @@ Not included in v1
 
 ## Rating/Review Notes
 - Real-time GO Transit data integration
-- Accurate location tracking with live updates
+- Location is used for map position and optional active-ride get-off alerts
 - Comprehensive trip information display
 - Intuitive user interface

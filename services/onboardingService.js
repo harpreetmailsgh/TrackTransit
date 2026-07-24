@@ -19,7 +19,7 @@ async function writeOnboardingRaw(data) {
   try {
     await FileSystem.writeAsStringAsync(ONBOARDING_FILE, JSON.stringify(data));
   } catch (e) {
-    console.log('[TrackTransit] onboardingService write failed:', e?.message);
+    console.log('[TransitScanner] onboardingService write failed:', e?.message);
   }
 }
 

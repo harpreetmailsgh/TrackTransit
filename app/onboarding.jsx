@@ -70,7 +70,7 @@ export default function OnboardingScreen() {
       await setOnboardingComplete();
       router.replace('/(tabs)');
     } catch (e) {
-      console.log('[TrackTransit] onboarding continue failed:', e?.message);
+      console.log('[TransitScanner] onboarding continue failed:', e?.message);
       setIsLoading(false);
     }
   };
@@ -107,7 +107,7 @@ export default function OnboardingScreen() {
       >
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollInner}>
           <View style={styles.appNameWrap}>
-            <Text style={styles.appName}>TrackTransit</Text>
+            <Text style={styles.appName}>Transit Scanner</Text>
           </View>
 
           <View style={styles.iconContainer}>

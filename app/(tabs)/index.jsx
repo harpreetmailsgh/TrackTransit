@@ -61,36 +61,6 @@ function formatEtaLabel(seconds) {
   return `About ${minutes} min left`;
 }
 
-function getChecklist(progressMessage, progressPercent) {
-  const msg = String(progressMessage || '').toLowerCase();
-  let current = 0;
-  if (msg.includes('loading cached go transit data')) current = 1;
-  if (msg.includes('downloading') || msg.includes('loading go transit data')) current = 2;
-  if (msg.includes('reading stops & routes')) current = 3;
-  if (msg.includes('parsing schedules')) current = 4;
-  if (msg.includes('saving cache') || msg.includes('finalizing')) current = 5;
-  if (progressPercent >= 1 || msg.includes('ready')) current = 6;
-
-  const steps = [
-    { key: 'boot', label: 'Initialize startup checks' },
-    { key: 'cache', label: 'Check/load local cache' },
-    { key: 'download', label: 'Download GTFS package' },
-    { key: 'read', label: 'Read stops and routes' },
-    { key: 'parse', label: 'Parse schedules and build indexes' },
-    { key: 'save', label: 'Persist offline cache' },
-    { key: 'ready', label: 'Finalize and launch app' },
-  ];
-
-  return steps.map((step, idx) => {
-    const stepIndex = idx;
-    let status = 'pending';
-    if (stepIndex < current) status = 'done';
-    else if (stepIndex === current) status = 'current';
-    if (current >= 6) status = 'done';
-    return { ...step, status };
-  });
-}
-
 export default function HomeScreen() {
   const router = useRouter();
   const {
@@ -129,6 +99,7 @@ export default function HomeScreen() {
 
   /** Stop row chosen from a map pin (opens bottom sheet). */
   const [selectedStop, setSelectedStop] = useState(null);
+  const [startupClock, setStartupClock] = useState(() => Date.now());
 
   const sheetRef = useRef(null);
   /** One ref per train trip_id so we can call animateMarkerToCoordinate. */
@@ -375,8 +346,14 @@ export default function HomeScreen() {
     [stopFilter],
   );
 
-  const shouldShowStartup = !stopsReady;
-  const nowTick = Date.now();
+  useEffect(() => {
+    if (ready) return undefined;
+    const id = setInterval(() => setStartupClock(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [ready]);
+
+  const nowTick = startupClock;
+  const shouldShowStartup = Boolean(error) || !ready;
   const msSinceLastProgress = nowTick - (lastProgressAt || loadStartAt || nowTick);
   const stalled = shouldShowStartup && msSinceLastProgress >= STALLED_HINT_DELAY_MS;
   const loadingFromCache = /loading cached go transit data/i.test(progressMessage || '');
@@ -395,9 +372,9 @@ export default function HomeScreen() {
         )
       : 0;
   const startupEtaText = stalled ? '' : formatEtaLabel(etaSeconds);
-  const startupChecklist = getChecklist(progressMessage, progressPercent);
   const startupElapsedSeconds = Math.round(loadElapsedMs / 1000);
   const startupSinceUpdateSeconds = Math.max(0, Math.round(msSinceLastProgress / 1000));
+  const showStartupLogAction = Boolean(error) || startupElapsedSeconds >= 10;
 
   useEffect(() => {
     setLoading && setLoading(shouldShowStartup);
@@ -410,9 +387,9 @@ export default function HomeScreen() {
         progressPercent={progressPercent}
         progressMessage={progressMessage}
         stalled={stalled}
-        detailText={startupDetailText}
+        detailText={startupElapsedSeconds >= 10 ? startupDetailText : ''}
         etaText={startupEtaText}
-        checklist={startupChecklist}
+        showLogAction={showStartupLogAction}
         loadAttempt={loadAttempt + 1}
         loadElapsedSeconds={startupElapsedSeconds}
         secondsSinceLastUpdate={startupSinceUpdateSeconds}

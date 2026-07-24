@@ -47,6 +47,7 @@ const YIELD_INDEX_INTERVAL = 3500;
 const STAGE_UNZIP_TIMEOUT_MS = 2 * 60 * 1000;
 const STAGE_PARSE_TIMEOUT_MS = 4 * 60 * 1000;
 const STAGE_INDEX_TIMEOUT_MS = 3 * 60 * 1000;
+const STARTUP_SCHEDULE_DAYS = 1;
 const GTFS_ZIP_TEMP_FILE = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}gtfs-static-download.zip`;
 const GTFS_ZIP_EXTRACT_DIR = `${FileSystem.cacheDirectory || FileSystem.documentDirectory}gtfs-static-extracted`;
 
@@ -102,6 +103,8 @@ let schedulesReadyFlag = false;
 let loadGeneration = 0;
 /** Tracks which date/mode schedule slices are in memory (`ymd:train` / `ymd:bus`). */
 const loadedScheduleKeys = new Set();
+/** Serializes lazy schedule loads so overlapping screens cannot append duplicate stop_times. */
+let scheduleLoadQueue = Promise.resolve();
 /** Cached bundle meta from hosted SQLite download. */
 let cachedBundleMeta = null;
 let startupPhase = 'idle';
@@ -126,10 +129,11 @@ export function getGtfsStartupDiagnostics() {
 }
 
 function logGtfs(phase, detail) {
+  if (typeof __DEV__ !== 'undefined' && !__DEV__) return;
   if (detail !== undefined) {
-    console.log(`[TrackTransit][gtfsService] ${phase}`, detail);
+    console.log(`[TransitScanner][gtfsService] ${phase}`, detail);
   } else {
-    console.log(`[TrackTransit][gtfsService] ${phase}`);
+    console.log(`[TransitScanner][gtfsService] ${phase}`);
   }
 }
 
@@ -324,6 +328,7 @@ export function isSchedulesReady() {
 
 export function clearLoadedScheduleKeys() {
   loadedScheduleKeys.clear();
+  scheduleLoadQueue = Promise.resolve();
   stopTimesByStopId = new Map();
   stopTimesByTripId = new Map();
   tripsById = new Map();
@@ -402,23 +407,29 @@ function datesNeedingLoad(dates, modes) {
 }
 
 export async function ensureSchedulesForDate(ymd, options = {}) {
-  const modes = modesToScheduleFilter(options.modes);
-  const windowDates = getSlidingWindowDates(ymd, 3);
-  const toLoad = datesNeedingLoad(windowDates, modes);
-  if (!toLoad.length) {
-    return { ok: true, loaded: false };
-  }
+  const run = async () => {
+    const modes = modesToScheduleFilter(options.modes);
+    const windowDates = getSlidingWindowDates(ymd, 3);
+    const toLoad = datesNeedingLoad(windowDates, modes);
+    if (!toLoad.length) {
+      return { ok: true, loaded: false };
+    }
 
-  const schedule = await loadHostedSchedulesForDates(
-    toLoad,
-    modes,
-    activeServiceIdsForDate,
-    options.onProgress,
-  );
-  await appendScheduleData(schedule.trips, schedule.stopTimes);
-  await finalizeStopTimeTripIndexes();
-  markLoadedKeysForDates(toLoad, modes);
-  return { ok: true, loaded: true };
+    const schedule = await loadHostedSchedulesForDates(
+      toLoad,
+      modes,
+      activeServiceIdsForDate,
+      options.onProgress,
+    );
+    await appendScheduleData(schedule.trips, schedule.stopTimes);
+    await finalizeStopTimeTripIndexes();
+    markLoadedKeysForDates(toLoad, modes);
+    return { ok: true, loaded: true };
+  };
+
+  const next = scheduleLoadQueue.catch(() => {}).then(run);
+  scheduleLoadQueue = next.catch(() => {});
+  return next;
 }
 
 function extractRemoteFingerprint(res) {
@@ -828,6 +839,22 @@ function appendStopTimeRowToIndexes(st) {
   stopTimesByTripId.get(tid).push(st);
 }
 
+function hasIndexedStopTimeRow(st) {
+  const tid = String(st?.trip_id || '');
+  if (!tid) return false;
+  const rows = stopTimesByTripId.get(tid);
+  if (!rows?.length) return false;
+  const sid = String(st.stop_id);
+  const seq = String(st.stop_sequence);
+  return rows.some(
+    (row) =>
+      String(row.stop_id) === sid &&
+      String(row.stop_sequence) === seq &&
+      String(row.arrival_time || '') === String(st.arrival_time || '') &&
+      String(row.departure_time || '') === String(st.departure_time || ''),
+  );
+}
+
 async function finalizeStopTimeTripIndexes() {
   let tripsSorted = 0;
   for (const arr of stopTimesByTripId.values()) {
@@ -893,6 +920,7 @@ async function appendScheduleData(trips, stopTimes) {
   }
   let rowsProcessed = 0;
   for (const st of stopTimes || []) {
+    if (hasIndexedStopTimeRow(st)) continue;
     appendStopTimeRowToIndexes(st);
     rowsProcessed += 1;
     if (rowsProcessed % YIELD_INDEX_INTERVAL === 0) {
@@ -1493,7 +1521,7 @@ async function loadFromCache(onProgress) {
 }
 
 async function loadFromHostedSqlite(onProgress, options = {}) {
-  setStartupPhase('sqlite-prepare', 'Preparing hosted schedules database');
+  setStartupPhase('sqlite-download', 'Preparing hosted schedules database');
   emitProgress(onProgress, 'Checking schedules database...', 0.02);
 
   const ensured = await ensureHostedSqlite({
@@ -1513,7 +1541,7 @@ async function loadFromHostedSqlite(onProgress, options = {}) {
   cachedBundleMeta = await getBundleMeta();
   loadedScheduleKeys.clear();
 
-  setStartupPhase('sqlite-load', 'Loading schedules from SQLite');
+  setStartupPhase('sqlite-load-core', 'Loading core schedules from SQLite');
   const core = await loadHostedCoreTables((event) => {
     if (!event) return;
     const msg = typeof event === 'string' ? event : event.message;
@@ -1522,11 +1550,12 @@ async function loadFromHostedSqlite(onProgress, options = {}) {
   });
 
   await hydrateCoreData(core);
+  setStartupPhase('sqlite-load-startup-schedules', 'Loading startup schedules from SQLite');
   emitProgress(onProgress, 'Loading startup schedules...', 0.55);
 
   const today = torontoTodayYmd();
   const startupDates = [];
-  for (let i = 0; i < 7; i += 1) {
+  for (let i = 0; i < STARTUP_SCHEDULE_DAYS; i += 1) {
     startupDates.push(addDaysYmd(today, i));
   }
 
@@ -1799,7 +1828,9 @@ export function loadGtfs(options = {}) {
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       const stack = e instanceof Error ? e.stack : undefined;
-      logGtfs('loadGtfs: ERROR', { message, stack, seq, loadGeneration });
+      const stage = e?.stage || null;
+      const details = e?.details || null;
+      logGtfs('loadGtfs: ERROR', { message, stage, details, stack, seq, loadGeneration });
 
       if (seq === loadGeneration) {
         loadPromise = null;

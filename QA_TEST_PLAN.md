@@ -1,7 +1,7 @@
-# TrackTransit v1.0.0 - QA Test Plan
+# Transit Scanner v1.1.0 - QA Test Plan
 
 ## Test Execution Environment
-- **Version:** 1.0.0
+- **Version:** 1.1.0
 - **Build Type:** Production
 - **Platforms:** iOS (13+), Android (8+)
 - **Test Date:** _______________

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - TrackTransit</title>
+    <title>Privacy Policy - Transit Scanner</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -46,7 +46,7 @@
 </head>
 <body>
     <h1>Privacy Policy</h1>
-    <p class="last-updated"><strong>Last Updated:</strong> May 2, 2026</p>
+    <p class="last-updated"><strong>Last Updated:</strong> June 4, 2026</p>
 
     <div class="toc">
         <h3>Table of Contents</h3>
@@ -66,28 +66,28 @@
 
     <h2 id="1">1. Overview & Commitment</h2>
     <p>
-        TrackTransit ("we," "us," "our," or "Company") is committed to respecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your data when you use our mobile application and related services.
+        Transit Scanner ("we," "us," "our," or "Company") is committed to respecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your data when you use our mobile application and related services.
     </p>
     <p>
-        <strong>Current Version:</strong> TrackTransit v1.0 operates in local-only mode. We do not collect, store, or transmit personal data to external servers. All data remains on your device unless you explicitly choose to enable features requiring external communication.
+        <strong>Current Version:</strong> Transit Scanner v1.0 stores your saved routes, preferences, and active ride state locally on your device. The app connects to external transit data services to download schedules, vehicle positions, service updates, and app data files. We do not sell user data, use advertising tracking, or run third-party analytics.
     </p>
 
     <h2 id="2">2. What Data We Collect</h2>
     
     <h3>2.1 Location Data</h3>
     <p>
-        <strong>Collection:</strong> When you grant permission, TrackTransit accesses your device's location to display your position on the map and calculate route information.
+        <strong>Collection:</strong> When you grant permission, Transit Scanner accesses your device's location to display your position on the map and, when you start an active ride, provide get-off alert support.
     </p>
     <p>
-        <strong>Storage:</strong> Location data is used in real-time only and is not stored by the app unless you explicitly interact with saved routes that reference your current position.
+        <strong>Storage:</strong> Location data is used in real time. Transit Scanner may store active ride state locally so it can continue a ride alert session, but it does not send your location to Transit Scanner servers.
     </p>
     <p>
-        <strong>Permission Control:</strong> You can disable location access at any time through your device's system settings. TrackTransit will request permission before any location data is used.
+        <strong>Permission Control:</strong> You can disable location access at any time through your device's system settings. Background location is used only for an active ride after you grant permission.
     </p>
 
     <h3>2.2 Route & Search History</h3>
     <p>
-        <strong>Collection:</strong> When you save a route or perform a search, TrackTransit stores this information locally on your device (e.g., which routes you save, search queries, trip details).
+        <strong>Collection:</strong> When you save a route or perform a search, Transit Scanner stores this information locally on your device (e.g., which routes you save, search queries, trip details).
     </p>
     <p>
         <strong>Storage:</strong> Stored only on your device's local storage. This data never leaves your phone unless you choose to export or share it.
@@ -98,15 +98,15 @@
 
     <h3>2.3 Notification Preferences</h3>
     <p>
-        <strong>Collection:</strong> If you enable notifications, TrackTransit stores your notification preferences locally (enabled/disabled state for different alert types).
+        <strong>Collection:</strong> If you enable notifications, Transit Scanner stores your notification preferences locally (enabled/disabled state for different alert types).
     </p>
     <p>
-        <strong>Storage:</strong> Local device storage only. In v1, notifications are not sent to your device; this infrastructure is prepared for future v2 features.
+        <strong>Storage:</strong> Notification preferences are stored locally. Transit Scanner uses local notifications for active-ride alerts and may request an Expo push notification token as part of notification setup; v1 does not send that token to a Transit Scanner backend.
     </p>
 
     <h3>2.4 Transit Data from GO Transit</h3>
     <p>
-        <strong>Collection:</strong> TrackTransit retrieves public real-time transit data (schedules, vehicle locations, delays) from GO Transit's public data feeds.
+        <strong>Collection:</strong> Transit Scanner retrieves public real-time transit data, schedules, vehicle locations, service updates, and hosted SQLite app data files from external data providers.
     </p>
     <p>
         <strong>Storage:</strong> Transit data is cached locally for performance and is not associated with your personal identity.
@@ -117,9 +117,9 @@
 
     <h2 id="3">3. How We Use Your Data</h2>
     <ul>
-        <li><strong>Location Tracking:</strong> To show your position on the map and calculate route recommendations.</li>
+        <li><strong>Location Tracking:</strong> To show your position on the map and provide active-ride get-off alerts.</li>
         <li><strong>Route Personalization:</strong> To remember your saved routes and search preferences.</li>
-        <li><strong>Notification Setup:</strong> To manage your notification preferences (prepared for v2 backend).</li>
+        <li><strong>Notification Setup:</strong> To manage local alert preferences and active-ride reminders.</li>
         <li><strong>App Functionality:</strong> To display schedules, delays, and real-time vehicle information.</li>
     </ul>
     <p>
@@ -137,7 +137,7 @@
         <li><strong>Saved Routes:</strong> Retained indefinitely until you manually delete them.</li>
         <li><strong>Search History:</strong> Retained indefinitely; can be manually cleared.</li>
         <li><strong>Location Data:</strong> Not persisted; used only during active app sessions.</li>
-        <li><strong>Transit Data Cache:</strong> Refreshed hourly; older data is automatically purged.</li>
+        <li><strong>Transit Data Cache:</strong> Stored locally for performance and refreshed as app data or live transit feeds are updated.</li>
     </ul>
     <p>
         <strong>No Backup:</strong> In v1, data is not automatically backed up or synced to cloud services.
@@ -145,13 +145,15 @@
 
     <h2 id="5">5. Sharing & Third Parties</h2>
     <p>
-        <strong>Current Situation (v1):</strong> TrackTransit does not share data with third parties. All data remains on your device.
+        <strong>Current Situation (v1):</strong> Transit Scanner does not sell user data or use advertising tracking. The app contacts external services needed to provide transit schedules, live transit information, hosted data files, and notification setup.
     </p>
     <p>
         <strong>External APIs Used:</strong>
     </p>
     <ul>
-        <li><strong>GO Transit Data Feed:</strong> Public, anonymized transit data. Your usage of this data does not create a personal record associated with your identity.</li>
+        <li><strong>GO Transit / Metrolinx Data Services:</strong> Public transit schedules, service updates, vehicle positions, and related transit information.</li>
+        <li><strong>GitHub Releases:</strong> Hosted SQLite transit data files used to reduce app startup memory usage.</li>
+        <li><strong>Expo Notifications:</strong> Notification permission and token setup when notification features are enabled.</li>
     </ul>
     <p>
         <strong>No Analytics or Tracking:</strong> We do not use third-party analytics services, crash reporting with personal data, or user tracking.
@@ -165,7 +167,7 @@
         <strong>Delete Saved Routes:</strong> You can delete individual saved routes or clear all saved data directly in the app.
     </p>
     <p>
-        <strong>Clear Search History:</strong> Available through the app settings.
+        <strong>Local Search Data:</strong> Search and saved-route data remains on your device and can be removed through available in-app deletion controls or by deleting the app.
     </p>
     <p>
         <strong>Notification Preferences:</strong> You can disable notifications at the app level or device level.
@@ -176,7 +178,7 @@
         <strong>Local Storage Security:</strong> Your device's operating system (iOS or Android) protects local app data through device-level encryption and access controls.
     </p>
     <p>
-        <strong>No Network Transmission of Personal Data:</strong> TrackTransit does not send personal information over the network. Only public transit data requests are made to GO Transit's public API.
+        <strong>Network Transmission:</strong> Transit Scanner does not send your saved routes, searches, or location to Transit Scanner servers. The app does make HTTPS requests to external transit data and app data services required for functionality.
     </p>
     <p>
         <strong>SSL/TLS for Public Data:</strong> All communication with GO Transit's data feed uses secure HTTPS connections.
@@ -187,7 +189,7 @@
 
     <h2 id="8">8. Children's Privacy</h2>
     <p>
-        TrackTransit is designed for users of all ages and is not restricted to adults. We do not knowingly collect personal information from children under 13 in a way that violates COPPA (Children's Online Privacy Protection Act) or GDPR.
+        Transit Scanner is designed for users of all ages and is not restricted to adults. We do not knowingly collect personal information from children under 13 in a way that violates COPPA (Children's Online Privacy Protection Act) or GDPR.
     </p>
     <p>
         <strong>No Data Collection from Children:</strong> We do not collect names, email addresses, or other identifiable information from any user, regardless of age.
@@ -198,7 +200,7 @@
 
     <h2 id="9">9. Future Updates & Backend Integration (v2+)</h2>
     <p>
-        <strong>Backend Infrastructure:</strong> TrackTransit is architected to support future cloud-based features in v2 and beyond, including:
+        <strong>Backend Infrastructure:</strong> Transit Scanner is architected to support future cloud-based features in v2 and beyond, including:
     </p>
     <ul>
         <li>Delay notification delivery via push notifications</li>
@@ -207,7 +209,7 @@
         <li>Anonymized usage analytics to improve the service</li>
     </ul>
     <p>
-        <strong>Privacy on Backend Transition:</strong> If and when TrackTransit adds backend services, we will:
+        <strong>Privacy on Backend Transition:</strong> If and when Transit Scanner adds backend services, we will:
     </p>
     <ul>
         <li>Update this Privacy Policy with full details before launch</li>
@@ -222,8 +224,8 @@
         If you have questions about this Privacy Policy or our privacy practices, please contact us at:
     </p>
     <p>
-        <strong>Email:</strong> privacy@tracktransit.app<br>
-        <strong>Website:</strong> https://tracktransit.app
+        <strong>Email:</strong> therobinhood289@gmail.com<br>
+        <strong>Website:</strong> https://transitscanner.app
     </p>
     <p>
         <strong>Changes to This Policy:</strong> We may update this Privacy Policy periodically. We will notify users through the app or email about significant changes.
@@ -231,7 +233,7 @@
 
     <hr>
     <p style="font-size: 0.9em; color: #666; margin-top: 40px;">
-        © 2026 TrackTransit. All rights reserved.
+        © 2026 Transit Scanner. All rights reserved.
     </p>
 </body>
 </html>

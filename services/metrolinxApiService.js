@@ -1,21 +1,16 @@
 // Fetch advisories from Metrolinx Open Data API
 export async function getMetrolinxAdvisories() {
-  console.log('getMetrolinxAdvisories called');
   const url = `${BASE_URL}/ServiceUpdate/Advisory?key=${encodeURIComponent(API_KEY)}`;
-  console.log('Fetching Metrolinx advisories from:', url);
   let res;
   try {
     res = await fetch(url);
   } catch (err) {
-    console.log('Metrolinx advisories fetch error:', err);
     throw err;
   }
   if (!res.ok) {
-    console.log('Metrolinx advisories fetch failed with status:', res.status);
     throw new Error(`Metrolinx API advisories failed (${res.status})`);
   }
   const payload = await res.json();
-  console.log('Metrolinx advisories raw payload:', payload);
   // Normalize to array
   const advisories = Array.isArray(payload) ? payload : (payload ? [payload] : []);
   // Map to a common alert-like structure

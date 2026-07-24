@@ -1,20 +1,20 @@
 ====================================================
-TRACKTRANSIT — PROJECT CONTEXT FOR CLAUDE
+TRANSIT SCANNER — PROJECT CONTEXT FOR CLAUDE
 ====================================================
 Paste this at the start of a new conversation to continue where we left off.
 ====================================================
 
 WHAT WE ARE BUILDING:
-A native mobile app called TrackTransit for real-time GO Transit tracking in Ontario Canada. 
+A native mobile app called Transit Scanner for real-time GO Transit tracking in Ontario Canada. 
 Built with React Native + Expo. Starts with GO Transit, expands to all Canada then US later.
 
 TOOL WE ARE USING TO BUILD:
-Cursor (free tier) — AI coding tool. Already installed and open with TrackTransit folder.
+Cursor (free tier) — AI coding tool. Already installed and open with the Transit Scanner project folder.
 
 WHAT IS ALREADY SET UP ON MY COMPUTER:
 - Node.js v24 installed
 - Cursor installed and logged in
-- TrackTransit folder created on Desktop and open in Cursor
+- Transit Scanner project folder created on Desktop and open in Cursor
 - Expo Go installed on my phone
 
 DATA APPROACH — IMPORTANT:
@@ -23,7 +23,7 @@ We are using GTFS static + GTFS-RT real-time feeds. NOT the GO Transit API. NO m
 GTFS Static file (schedules, stops, routes, platforms):
 https://www.gotransit.com/static_files/gotransit/assets/Files/GO_GTFS.zip
 - No registration needed, download directly
-- Already downloaded and saved in TrackTransit folder
+- Already downloaded and saved in the project folder
 
 GTFS-RT live feeds (no key needed, free, public):
 - Trip updates (delays):     https://api.gotrains.ca/gtfsrt/v2/GO/GTFSRt/TripUpdates
@@ -68,7 +68,7 @@ MONETIZATION (no ads, no subscriptions)
 ====================================================
 KEY DECISIONS ALREADY MADE
 ====================================================
-- App name: TrackTransit
+- App name: Transit Scanner
 - Framework: React Native + Expo (NOT web app, NOT Capacitor)
 - AI coding tool: Cursor free tier
 - Data: GTFS static + GTFS-RT (NOT GO Transit API)
@@ -81,7 +81,7 @@ KEY DECISIONS ALREADY MADE
 WHERE WE LEFT OFF
 ====================================================
 We are about to write the very first prompt in Cursor to start building the app.
-Cursor is open, TrackTransit folder is open inside Cursor.
+Cursor is open, Transit Scanner project folder is open inside Cursor.
 Next step: write the first prompt to build the app shell with navigation and colour scheme.
 
 ====================================================

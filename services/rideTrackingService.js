@@ -3,11 +3,11 @@ import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 
-// DEBUG: Use console.log for troubleshooting
 function debugLog(...args) {
+  if (typeof __DEV__ !== 'undefined' && !__DEV__) return;
   try {
     // eslint-disable-next-line no-console
-    console.log('[TrackTransit DEBUG]', ...args);
+    console.log('[TransitScanner DEBUG]', ...args);
   } catch {}
 }
 
@@ -15,7 +15,7 @@ import { getStopById, getTripStops } from './gtfsService';
 import * as gtfsRealtimeService from './gtfsRealtimeService';
 
 const RIDE_SESSION_FILE = `${FileSystem.documentDirectory}active-ride-v1.json`;
-const LOCATION_TASK_NAME = 'tracktransit-active-ride-location-task';
+const LOCATION_TASK_NAME = 'transitscanner-active-ride-location-task';
 const DEFAULT_LEAD_STOPS = 1;
 const PROGRESS_ADVANCE_RADIUS_METERS = 1200;
 const STARTUP_BOOTSTRAP_MAX_DISTANCE_METERS = 3000;
@@ -226,7 +226,7 @@ async function startLocationTask(backgroundEnabled = true) {
       pausesUpdatesAutomatically: true,
       showsBackgroundLocationIndicator: true,
       foregroundService: {
-        notificationTitle: 'TrackTransit ride tracking is active',
+        notificationTitle: 'Transit Scanner ride tracking is active',
         notificationBody: 'We will notify you before your destination stop.',
         killServiceOnDestroy: false,
       },

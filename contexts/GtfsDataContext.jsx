@@ -190,7 +190,7 @@ export function GtfsDataProvider({ children }) {
               new Error(
                 `Timed out after ${Math.round(GTFS_LOAD_TIMEOUT_MS / 60000)} minutes while loading GO Transit data.\n\n` +
                   `Last progress: ${lastProgressRef.current}\n\n` +
-                  `Open the Metro terminal (or Expo dev tools) and search logs for "[TrackTransit][gtfsService]" ` +
+                  `Open the Metro terminal (or Expo dev tools) and search logs for "[TransitScanner][gtfsService]" ` +
                   `to see download / unzip / parse steps.`,
               ),
             );
@@ -206,7 +206,7 @@ export function GtfsDataProvider({ children }) {
             reject(
               new Error(
                 `Loading appears stalled for ${Math.round(stalledForMs / 1000)}s at: ${lastProgressRef.current}. ` +
-                  `Please retry. If this keeps happening, check logs for "[TrackTransit][gtfsService]".`,
+                  `Please retry. If this keeps happening, check logs for "[TransitScanner][gtfsService]".`,
               ),
             );
           }, GTFS_STALL_CHECK_INTERVAL_MS);
@@ -285,13 +285,17 @@ export function GtfsDataProvider({ children }) {
         if (!cancelled) {
           invalidateActiveGtfsLoad();
           const message = e instanceof Error ? e.message : String(e);
+          const details =
+            e && typeof e === 'object' && e.details
+              ? `\n\nError details:\n${JSON.stringify(e.details, null, 2)}`
+              : '';
           const traceDump = startupTraceRef.current.length
             ? `\n\nStartup trace (newest last):\n${startupTraceRef.current.join('\n')}`
             : '';
           const stack = e instanceof Error && e.stack ? `\n\n---\n${e.stack}` : '';
           setProgressMessage(localStopsReady ? 'Schedules sync failed' : 'Load failed');
           setLastProgressAt(Date.now());
-          setError(message + traceDump + stack);
+          setError(message + details + traceDump + stack);
           finishedRef.current = !localStopsReady;
         }
       } finally {
@@ -307,7 +311,7 @@ export function GtfsDataProvider({ children }) {
         ? startupTraceRef.current.join('\n')
         : '(no trace lines recorded)';
       const body = [
-        'TrackTransit GTFS startup watchdog snapshot',
+        'Transit Scanner GTFS startup watchdog snapshot',
         `capturedAt=${new Date().toISOString()}`,
         `loadAttempt=${loadAttempt}`,
         `lastProgress=${lastProgressRef.current}`,

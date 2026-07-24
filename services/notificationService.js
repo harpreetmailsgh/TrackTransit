@@ -22,7 +22,7 @@ async function writeToken(token) {
       JSON.stringify({ token, updatedAt: Date.now() }),
     );
   } catch (e) {
-    console.log('[TrackTransit] push token write failed:', e?.message);
+    console.log('[TransitScanner] push token write failed:', e?.message);
   }
 }
 
@@ -58,7 +58,7 @@ export async function setNotificationPreference(enabled) {
       JSON.stringify({ enabled: Boolean(enabled), updatedAt: Date.now() }),
     );
   } catch (e) {
-    console.log('[TrackTransit] notification preference write failed:', e?.message);
+    console.log('[TransitScanner] notification preference write failed:', e?.message);
   }
 }
 
@@ -112,7 +112,7 @@ export async function registerForPushNotifications() {
     }
   } catch (e) {
     // Permission can be granted even when Expo push token retrieval fails in dev setups.
-    console.log('[TrackTransit] push token fetch failed:', e?.message);
+    console.log('[TransitScanner] push token fetch failed:', e?.message);
   }
 
   return { token, granted: true };

@@ -1,7 +1,7 @@
 # Google Play Store Metadata
 
 ## App Name
-TrackTransit
+Transit Scanner
 
 ## Short Description (80 characters max)
 Real-time GO Transit tracking and delay notifications for your daily commute.
@@ -9,11 +9,11 @@ Real-time GO Transit tracking and delay notifications for your daily commute.
 ## Full Description
 Track real-time transit delays and save your favorite routes with live delay notifications.
 
-TrackTransit makes commuting smarter by showing you exactly where your bus or train is right now. See live delay information for GO Transit routes in the Greater Toronto Area, search for any trip, and save your favorite routes for quick access.
+Transit Scanner makes commuting smarter by helping you follow GO Transit routes in the Greater Toronto Area. View schedule details, real-time vehicle and delay information where available, search for trips, and save routes for quick access.
 
 **Key Features:**
 - Real-time location tracking for GO Transit vehicles
-- Live delay notifications for saved routes
+- Optional active-ride get-off reminders
 - Search and filter by stop, route, or destination
 - Save favorite trips for quick access
 - Beautiful, intuitive map interface
@@ -23,7 +23,7 @@ TrackTransit makes commuting smarter by showing you exactly where your bus or tr
 Perfect for daily commuters in Toronto and the GTA who want reliable, up-to-the-minute transit information at their fingertips.
 
 ## Privacy Policy URL
-https://tracktransit.app/privacy
+https://transitscanner.app/privacy
 
 ## App Category
 Navigation & Maps

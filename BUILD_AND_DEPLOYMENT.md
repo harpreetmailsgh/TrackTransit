@@ -1,13 +1,13 @@
-# TrackTransit Build & Deployment Guide
+# Transit Scanner Build & Deployment Guide
 
-## Version: 1.0.0
+## Version: 1.1.0
 **Release Date:** May 2, 2026
 
 ---
 
 ## Pre-Build Checklist
 
-- [x] app.json configured with version 1.0.0, buildNumber (iOS), versionCode (Android)
+- [x] app.json configured with version 1.1, buildNumber 2 (iOS), versionCode 2 (Android)
 - [x] All permissions documented (iOS: NSLocationWhenInUseUsageDescription, NSUserNotificationsUsageDescription, etc.)
 - [x] Privacy Policy created and ready for hosting
 - [x] Metadata prepared for App Store and Play Store
@@ -62,14 +62,14 @@ eas build --platform ios --profile production
 
 The file `store-metadata/privacy-policy.html` should be hosted at:
 ```
-https://tracktransit.app/privacy
+https://transitscanner.app/privacy
 ```
 
 **Current Placeholder:** Update `app.json` privacy URLs when hosting is available:
 ```json
 "infoPlist": {
   "NSUserNotificationsUsageDescription": "...",
-  "NSPrivacyPolicyURL": "https://tracktransit.app/privacy"
+   "NSPrivacyPolicyURL": "https://transitscanner.app/privacy"
 }
 ```
 
@@ -87,7 +87,7 @@ https://tracktransit.app/privacy
    - Age rating: **4+**
 
 4. **Version Release Information:**
-   - What's New: "Initial release of TrackTransit - Real-time GO Transit tracking"
+   - What's New: "Initial release of Transit Scanner - Real-time GO Transit tracking"
    - Keywords: transit, GO Transit, Toronto, GTA, real-time, tracking, delays
 
 5. **Submit for Review**
@@ -202,9 +202,9 @@ eas build --platform android --profile production
 
 ## Support & Contact
 
-**Email:** support@tracktransit.app
-**Website:** https://tracktransit.app
-**Privacy Policy:** https://tracktransit.app/privacy
+**Email:** therobinhood289@gmail.com
+**Website:** https://transitscanner.app
+**Privacy Policy:** https://transitscanner.app/privacy
 
 ---
 

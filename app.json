@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "TrackTransit",
+    "name": "Transit Scanner",
     "slug": "TrackTransit",
-    "scheme": "tracktransit",
-    "version": "1.0.0",
+    "scheme": "transitscanner",
+    "version": "1.1",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -16,20 +16,23 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "assets/*"
+    ],
     "ios": {
-      "supportsTablet": true,
-      "buildNumber": "1",
+      "supportsTablet": false,
+      "buildNumber": "2",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "TrackTransit uses your location to center the map and track your active ride.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "TrackTransit uses your location in the background to send get-off alerts before your destination.",
-        "NSUserNotificationsUsageDescription": "TrackTransit sends notifications to alert you about trip delays for your saved routes.",
+        "NSLocationWhenInUseUsageDescription": "Transit Scanner uses your location to show your position on the map and track an active ride when you choose to start one.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Transit Scanner uses background location only during an active ride so it can send get-off alerts before your destination.",
+        "NSLocationAlwaysUsageDescription": "Transit Scanner uses background location only during an active ride to provide get-off alert support.",
+        "NSUserNotificationsUsageDescription": "Transit Scanner sends ride alerts and get-off reminders when you enable notifications.",
         "UIBackgroundModes": [
-          "location",
           "location"
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.harpreetmailsexpo.TrackTransit"
+      "bundleIdentifier": "com.harpreetmails.transitscanner"
     },
     "android": {
       "adaptiveIcon": {
@@ -37,22 +40,17 @@
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.harpreetmails.transitscanner",
       "edgeToEdgeEnabled": true,
-      "versionCode": 1,
+      "versionCode": 2,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION",
-        "POST_NOTIFICATIONS",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_BACKGROUND_LOCATION",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_LOCATION"
-      ],
-      "package": "com.harpreetmailsexpo.TrackTransit"
+        "POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -82,13 +80,13 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "TrackTransit uses your location to center the map and track your active ride.",
-          "locationAlwaysAndWhenInUsePermission": "TrackTransit uses your location in the background to send get-off alerts before your destination.",
+          "locationWhenInUsePermission": "Transit Scanner uses your location to show your position on the map and track an active ride when you choose to start one.",
+          "locationAlwaysAndWhenInUsePermission": "Transit Scanner uses background location only during an active ride so it can send get-off alerts before your destination.",
           "isAndroidBackgroundLocationEnabled": true,
           "isIosBackgroundLocationEnabled": true
         }
       ],
-      "expo-build-properties"
+      "expo-sqlite"
     ],
     "extra": {
       "router": {},
