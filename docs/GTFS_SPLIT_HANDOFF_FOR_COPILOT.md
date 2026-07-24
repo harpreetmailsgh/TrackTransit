@@ -67,8 +67,8 @@ flowchart TB
 
 **Live release URLs used by Transit Scanner (default in app):**
 
-- Manifest: `https://github.com/harpreetmailsgh/TrackTransit/releases/download/gtfs-data/manifest.json`
-- Note: the current published GTFS release artifacts are hosted in the existing GitHub repo path `harpreetmailsgh/TrackTransit`.
+- Manifest: `https://github.com/harpreetmailsgh/transit-scanner/releases/download/gtfs-data/manifest.json`
+- Note: the current published GTFS release artifacts are hosted in the GitHub repo path `harpreetmailsgh/transit-scanner`.
 - Override via `EXPO_PUBLIC_GTFS_SQLITE_MANIFEST_URL` / `EXPO_PUBLIC_GTFS_SQLITE_DB_URL` if needed.
 
 ---

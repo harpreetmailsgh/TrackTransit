@@ -24,9 +24,9 @@ const SQLITE_UPDATE_FILE = `${FileSystem.documentDirectory}go-gtfs-v1-update.jso
 
 // Default GTFS SQLite asset URLs are still hosted from the existing GitHub release repo path.
 const DEFAULT_MANIFEST_URL =
-  'https://github.com/harpreetmailsgh/TrackTransit/releases/download/gtfs-data/manifest.json';
+  'https://github.com/harpreetmailsgh/transit-scanner/releases/download/gtfs-data/manifest.json';
 const DEFAULT_DB_URL =
-  'https://github.com/harpreetmailsgh/TrackTransit/releases/download/gtfs-data/go-gtfs-v1.sqlite';
+  'https://github.com/harpreetmailsgh/transit-scanner/releases/download/gtfs-data/go-gtfs-v1.sqlite';
 
 const MANIFEST_URL = (process.env.EXPO_PUBLIC_GTFS_SQLITE_MANIFEST_URL || DEFAULT_MANIFEST_URL).trim();
 const FALLBACK_DB_URL = (process.env.EXPO_PUBLIC_GTFS_SQLITE_DB_URL || DEFAULT_DB_URL).trim();
