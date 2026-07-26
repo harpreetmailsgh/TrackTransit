@@ -21,7 +21,7 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Transit Scanner uses your location to show your position on the map and track an active ride when you choose to start one.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Transit Scanner uses background location only during an active ride so it can send get-off alerts before your destination.",
@@ -42,7 +42,7 @@
       },
       "package": "com.harpreetmails.transitscanner",
       "edgeToEdgeEnabled": true,
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",

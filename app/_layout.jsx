@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -16,6 +16,10 @@ import { configureNotifications } from '../services/notificationService';
 
 function RootContent() {
   const [onboardingComplete, setOnboardingComplete] = useState(null); // null = loading
+
+  const handleOnboardingComplete = useCallback(() => {
+    setOnboardingComplete(true);
+  }, []);
 
   useEffect(() => {
     configureNotifications().catch(() => {
@@ -54,7 +58,7 @@ function RootContent() {
 
   if (!onboardingComplete) {
     // First run: show onboarding (no GTFS loading yet)
-    return <OnboardingScreen />;
+    return <OnboardingScreen onComplete={handleOnboardingComplete} />;
   }
 
   // Returning user: show normal app with GTFS bootstrap

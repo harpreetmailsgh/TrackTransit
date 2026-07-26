@@ -12,7 +12,7 @@ const BG_LIGHT = '#f6fcf8';
 const TEXT_DARK = '#1e1e1e';
 const TEXT_MUTED = '#666';
 
-export default function OnboardingScreen() {
+export default function OnboardingScreen({ onComplete }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(false);
@@ -68,9 +68,14 @@ export default function OnboardingScreen() {
     setIsLoading(true);
     try {
       await setOnboardingComplete();
-      router.replace('/(tabs)');
+      if (typeof onComplete === 'function') {
+        onComplete();
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (e) {
       console.log('[TransitScanner] onboarding continue failed:', e?.message);
+    } finally {
       setIsLoading(false);
     }
   };
