@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import SleekHeaderBar from '../../components/SleekHeaderBar';
 /**
- * Search screen — find trips from a stop, optionally filtered to a destination.
+ * Search screen - find trips from a stop, optionally filtered to a destination.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -28,9 +28,6 @@ import { DateTime } from 'luxon';
 import { useGtfsData } from '../../contexts/GtfsDataContext';
 import {
   ensureSchedulesForDate,
-  getDeparturesForStop,
-  getPlatformForTrip,
-  getTripsFromTo,
   getTripsFromToForDate,
   searchStops,
   getDeparturesForDate,
@@ -38,7 +35,7 @@ import {
   getPlanningDateBounds,
   getTripStops,
 } from '../../services/gtfsService';
-import { getLiveDepartures, getDelayForStop, getTripIdsWithLiveUpdates, getRealtimeLastUpdatedMs } from '../../services/gtfsRealtimeService';
+import { getLiveDepartures, getDelayForStop, getTripIdsWithLiveUpdates } from '../../services/gtfsRealtimeService';
 import { getStopNextService } from '../../services/metrolinxApiService';
 
 const GO_GREEN = '#00853F';
@@ -64,7 +61,7 @@ function extractTripNumber(tripId) {
   return parts.length ? parts[parts.length - 1] : '';
 }
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// Helpers
 
 function StatusPill({ status, onTimeLabel = 'On-Time', delayLabel, unknownLabel = 'Live unavailable' }) {
   const isDelayed = status === 'delayed';
@@ -201,7 +198,7 @@ function MonthCalendar({
   );
 }
 
-// ── main component ─────────────────────────────────────────────────────────
+// Main component
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -223,6 +220,7 @@ export default function SearchScreen() {
   // Filter state
   const [selectedModes, setSelectedModes] = useState({ train: true, bus: false });
   const [selectedDate, setSelectedDate] = useState(DateTime.now().setZone('America/Toronto').toFormat('yyyyMMdd'));
+  const [tripTimeFilter, setTripTimeFilter] = useState('upcoming');
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(DateTime.now().setZone('America/Toronto').startOf('month'));
   const [schedulesForSearchReady, setSchedulesForSearchReady] = useState(true);
@@ -433,6 +431,7 @@ export default function SearchScreen() {
     setToSuggestions([]);
     setSelectedModes({ train: true, bus: false });
     setSelectedDate(DateTime.now().setZone('America/Toronto').toFormat('yyyyMMdd'));
+    setTripTimeFilter('upcoming');
     setDatePickerOpen(false);
     requestAnimationFrame(() => setRefreshing(false));
   }, []);
@@ -444,46 +443,26 @@ export default function SearchScreen() {
     }));
   }, []);
 
-  // Results computation
-  const results = useMemo(() => {
+  // Build the selected day's trips once; the radio buttons only filter this list.
+  const allTripResults = useMemo(() => {
     if (!ready || !fromStop || !schedulesForSearchReady) return [];
     if (!selectedModes.train && !selectedModes.bus) return [];
 
-    const today = DateTime.now().setZone('America/Toronto').toFormat('yyyyMMdd');
-    const now = DateTime.now().setZone('America/Toronto');
-    const isDifferentDate = selectedDate !== today;
     const modeFilter = selectedModes.train !== selectedModes.bus
       ? selectedModes.train
         ? 'train'
         : 'bus'
       : null;
 
-    // Use a larger candidate pool when bus is selected so bus trips aren't
-    // crowded out by trains at mixed stations.
-    const candidateLimit = selectedModes.bus
-      ? SEARCH_CANDIDATE_LIMIT_BUS
-      : SEARCH_CANDIDATE_LIMIT_TRAIN;
-    let staticDeps;
-    if (!toStop) {
-      // Get departures from this stop
-      staticDeps = isDifferentDate
-        ? getDeparturesForDate(fromStop.stop_id, selectedDate, candidateLimit, {
-            mode: modeFilter,
-          })
-        : getDeparturesForStop(fromStop.stop_id, candidateLimit, {
-            mode: modeFilter,
-            allowRouteTimeCollapse: false,
-          });
-    } else {
-      // Get trips from origin to destination
-      staticDeps = isDifferentDate
-        ? getTripsFromToForDate(fromStop.stop_id, toStop.stop_id, selectedDate, candidateLimit, {
-            mode: modeFilter,
-          })
-        : getTripsFromTo(fromStop.stop_id, toStop.stop_id, candidateLimit, {
-            mode: modeFilter,
-          });
-    }
+    const candidateLimit = 1000;
+    const staticDeps = toStop
+      ? getTripsFromToForDate(fromStop.stop_id, toStop.stop_id, selectedDate, candidateLimit, {
+          mode: modeFilter,
+        })
+      : getDeparturesForDate(fromStop.stop_id, selectedDate, candidateLimit, {
+          mode: modeFilter,
+          allowRouteTimeCollapse: false,
+        });
 
     if (!staticDeps.length) return [];
 
@@ -507,7 +486,7 @@ export default function SearchScreen() {
           ? DateTime.fromISO(dep.scheduledDateTime).plus({ seconds: delaySec })
           : DateTime.fromISO(dep.scheduledDateTime);
 
-      // Arrival stop may have a different delay — look it up separately
+      // Arrival stop may have a different delay; look it up separately.
       const arrivalDelaySec = toStop
         ? (() => {
             const sec = getDelayForStop(dep.trip_id, toStop.stop_id);
@@ -576,6 +555,7 @@ export default function SearchScreen() {
         hasLiveStatus: delaySec != null,
         hasGtfsTripUpdate,
         liveDateTime: liveDepartDt.toISO(),
+        liveDateTimeMs: liveDepartDt.toMillis(),
         liveTimeLabel: liveDepartDt.toFormat('h:mm a').toUpperCase(),
         liveArrivalDateTime: liveArrivalDt ? liveArrivalDt.toISO() : dep.arrivalDateTime ?? null,
         liveArrivalTimeLabel: liveArrivalDt
@@ -589,7 +569,6 @@ export default function SearchScreen() {
       };
     });
 
-    // Apply mode filter (multi-select Train/Bus)
     let filtered = enrichedDeps.filter((d) => {
       const isBus = Number(d.route_type) === BUS_ROUTE_TYPE;
       return isBus ? selectedModes.bus : selectedModes.train;
@@ -602,48 +581,25 @@ export default function SearchScreen() {
       filtered = filtered.filter((d) => norm(d.endStopName) !== origin);
     }
 
-    if (!isDifferentDate) {
-      filtered = filtered.filter((d) => DateTime.fromISO(d.liveDateTime) >= now);
-    }
-
     filtered.sort(
       (a, b) =>
-        DateTime.fromISO(a.liveDateTime).toMillis() -
-        DateTime.fromISO(b.liveDateTime).toMillis(),
+        Number(a.liveDateTimeMs || 0) -
+        Number(b.liveDateTimeMs || 0),
     );
-
-    // Fallback: if nothing survives filtering, show static schedule so users
-    // never see an empty state due to unexpected live-data gaps or edge cases.
-    if (filtered.length === 0) {
-      const fallbackNow = DateTime.now().setZone('America/Toronto');
-      let basic = staticDeps
-        .filter((d) => DateTime.fromISO(d.scheduledDateTime) >= fallbackNow)
-        .map((d) => ({
-          ...d,
-          delayMinutes: null,
-          hasLiveStatus: false,
-          liveDateTime: d.scheduledDateTime,
-          liveTimeLabel: d.scheduledTimeLabel,
-          liveArrivalDateTime: d.arrivalDateTime ?? null,
-          liveArrivalTimeLabel: d.arrivalTimeAtTo ?? null,
-          departurePlatformCode: d.platformCode ?? null,
-          arrivalPlatformCode: toStop ? getPlatformForTrip(d.trip_id, toStop.stop_id) ?? null : null,
-        }))
-        .sort(
-          (a, b) =>
-            DateTime.fromISO(a.liveDateTime).toMillis() -
-            DateTime.fromISO(b.liveDateTime).toMillis(),
-        );
-      if (!toStop) {
-        const norm = (s) => String(s || '').trim().toLowerCase();
-        const origin = norm(fromStop.stop_name);
-        basic = basic.filter((d) => norm(d.endStopName) !== origin);
-      }
-      return basic;
-    }
 
     return filtered;
   }, [ready, schedulesForSearchReady, fromStop, toStop, liveTick, selectedDate, selectedModes, metrolinxByTrip]);
+
+  const results = useMemo(() => {
+    if (tripTimeFilter === 'all') return allTripResults;
+
+    const today = DateTime.now().setZone('America/Toronto').toFormat('yyyyMMdd');
+    if (selectedDate !== today) return allTripResults;
+
+    const now = DateTime.now().setZone('America/Toronto');
+    const nowMs = now.toMillis();
+    return allTripResults.filter((d) => Number(d.liveDateTimeMs || 0) >= nowMs);
+  }, [allTripResults, selectedDate, tripTimeFilter]);
 
   const displayResults = results;
 
@@ -690,7 +646,7 @@ export default function SearchScreen() {
     if (isComputing) setIsComputing(false);
   }, [displayResults, fromStop, toStop]);
 
-  // ── Loading / error states ────────────────────────────────────────────────
+  // Loading / error states
   if (!ready && !error) {
     return (
       <SafeAreaView style={styles.center} edges={['bottom', 'left', 'right']}>
@@ -712,12 +668,6 @@ export default function SearchScreen() {
   const showNoResults = fromStop && !toStop && displayResults.length === 0;
   const showNoTripsBetween = fromStop && toStop && displayResults.length === 0;
 
-  const realtimeUpdatedLabel = useMemo(() => {
-    const ms = getRealtimeLastUpdatedMs();
-    if (!ms) return 'Realtime: not connected';
-    return `Realtime updated: ${DateTime.fromMillis(ms).setZone('America/Toronto').toFormat('h:mm:ss a')}`;
-  }, [liveTick]);
-
   return (
     <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
       <SleekHeaderBar title="Search" icon="search" description="Find trips" />
@@ -726,7 +676,7 @@ export default function SearchScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={80}
       >
-        {/* ── Top filters (always visible) ── */}
+        {/* Top filters */}
         <View style={[styles.topModeSection, { marginTop: (Platform.OS === 'ios' ? 101 : 56) + 12 }]}> 
           <ScrollView
             horizontal
@@ -829,7 +779,7 @@ export default function SearchScreen() {
           )}
         </View>
 
-        {/* ── Search card ── */}
+        {/* Search card */}
         <View style={styles.searchCard}>
           {/* From row */}
           <View style={styles.fieldRow}>
@@ -923,7 +873,33 @@ export default function SearchScreen() {
           )}
         </View>
 
-        {/* ── Results + empty states ── */}
+        {/* Trip time filter */}
+        <View style={styles.tripTimeFilterRow}>
+          {[
+            { key: 'upcoming', label: 'Upcoming Trips' },
+            { key: 'all', label: 'All Trips' },
+          ].map((option) => {
+            const active = tripTimeFilter === option.key;
+            return (
+              <TouchableOpacity
+                key={option.key}
+                style={styles.tripTimeFilterOption}
+                onPress={() => setTripTimeFilter(option.key)}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons
+                  name={active ? 'radio-button-checked' : 'radio-button-unchecked'}
+                  size={18}
+                  color={active ? GO_GREEN : '#7a7f87'}
+                />
+                <Text style={[styles.tripTimeFilterText, active && styles.tripTimeFilterTextActive]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         {isComputing ? (
           <View style={styles.computingBox}>
             <ActivityIndicator size="large" color={GO_GREEN} />
@@ -945,11 +921,6 @@ export default function SearchScreen() {
                 colors={[GO_GREEN]}
               />
             }
-            ListHeaderComponent={() => (
-              <View style={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 2 }}>
-                <Text style={{ color: '#6b7280', fontSize: 12 }}>{realtimeUpdatedLabel}</Text>
-              </View>
-            )}
             ListEmptyComponent={
               showNoFrom ? (
                 <View style={styles.emptyBox}>
@@ -1006,7 +977,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ── Search card ──
+  // Search card
   searchCard: {
     backgroundColor: '#fff',
     marginHorizontal: 12,
@@ -1023,6 +994,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     zIndex: 20,
+  },
+  tripTimeFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginHorizontal: 18,
+    marginTop: -2,
+    marginBottom: 8,
+  },
+  tripTimeFilterOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+  },
+  tripTimeFilterText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#7a7f87',
+  },
+  tripTimeFilterTextActive: {
+    color: GO_GREEN,
   },
   fieldRow: {
     flexDirection: 'row',
@@ -1073,7 +1066,7 @@ const styles = StyleSheet.create({
     color: '#222',
   },
 
-  // ── Empty states ──
+  // Empty states
   emptyBox: {
     flex: 1,
     alignItems: 'center',
@@ -1101,7 +1094,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ── Result cards ──
+  // Result cards
   listContent: {
     paddingHorizontal: 14,
     paddingBottom: 24,
@@ -1283,7 +1276,7 @@ const styles = StyleSheet.create({
     color: '#4b5563',
   },
 
-  // ── Filters ──
+  // Filters
   topModeSection: {
     paddingHorizontal: 14,
     paddingTop: 8,

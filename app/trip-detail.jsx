@@ -1,14 +1,16 @@
 /**
- * Trip Detail screen — shows the stop-by-stop timeline for a selected trip.
+ * Trip Detail screen - shows the stop-by-stop timeline for a selected trip.
  * Opened from the Search screen result cards.
  * Lives at the root stack level (above tabs) so pressing Back returns to the
  * originating tab (Search, Saved, etc.) rather than the default Home tab.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   ScrollView,
   RefreshControl,
   StyleSheet,
@@ -67,8 +69,7 @@ function formatStopLiveTimeLabel(item, delayMinutes) {
   if (!liveDt.isValid) {
     return scheduled;
   }
-  const live = liveDt.toFormat('h:mm a').toUpperCase();
-  return `${scheduled} -> ${live}`;
+  return liveDt.toFormat('h:mm a').toUpperCase();
 }
 
 function parseMetrolinxDateTime(value) {
@@ -121,6 +122,58 @@ function formatLiveStatusLabel(status, delayMinutes, departureLabel) {
   const safeDelay = Math.max(1, Number(delayMinutes) || 0);
   const shifted = shiftClockLabel(departureLabel, safeDelay);
   return `Delayed (+${safeDelay} min) ${shifted}`;
+}
+
+function resolveStopDateTime(item, serviceDateYmd, firstStopMinutes) {
+  const stopMin = parseClockLabelToMinutes(item?.arrival_time_label);
+  if (serviceDateYmd && stopMin != null) {
+    const anchor = DateTime.fromISO(serviceDateYmd, { zone: TORONTO_TZ }).startOf('day');
+    if (anchor.isValid) {
+      let dayOffset = 0;
+      if (firstStopMinutes != null && stopMin < firstStopMinutes) {
+        dayOffset = 1;
+      }
+      const hour24 = Math.floor(stopMin / 60);
+      const minute = stopMin % 60;
+      return anchor.plus({ days: dayOffset }).set({
+        hour: hour24,
+        minute,
+        second: 0,
+        millisecond: 0,
+      });
+    }
+  }
+
+  const iso = String(item?.arrival_date_time || '').trim();
+  if (!iso) return null;
+  const dt = DateTime.fromISO(iso, { zone: TORONTO_TZ });
+  return dt.isValid ? dt : null;
+}
+
+function computeUpcomingStopIndex(stops, serviceDateYmd, delayMinutes) {
+  if (!Array.isArray(stops) || !stops.length) return -1;
+
+  const now = DateTime.now().setZone(TORONTO_TZ);
+  const firstStopMinutes = parseClockLabelToMinutes(stops[0]?.arrival_time_label);
+  const delay =
+    Number.isFinite(Number(delayMinutes)) && Number(delayMinutes) > 0
+      ? Number(delayMinutes)
+      : 0;
+
+  const originDateTime = resolveStopDateTime(stops[0], serviceDateYmd, firstStopMinutes);
+  if (!originDateTime?.isValid || originDateTime.plus({ minutes: delay }) > now) {
+    return -1;
+  }
+
+  for (let i = 1; i < stops.length; i += 1) {
+    const stopDateTime = resolveStopDateTime(stops[i], serviceDateYmd, firstStopMinutes);
+    if (!stopDateTime?.isValid) continue;
+    if (stopDateTime.plus({ minutes: delay }) > now) {
+      return i;
+    }
+  }
+
+  return -1;
 }
 
 function computeMetrolinxFallbackDelayMinutes(lines, tripId, lineName, scheduledDateTime) {
@@ -226,6 +279,8 @@ export default function TripDetailScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [rtTick, setRtTick] = useState(0);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const upcomingBlink = useRef(new Animated.Value(0)).current;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { ready } = useGtfsData();
@@ -251,9 +306,33 @@ export default function TripDetailScreen() {
   }, []);
 
   useEffect(() => {
-    const id = setInterval(() => setRtTick((n) => n + 1), 30000);
+    const id = setInterval(() => {
+      setRtTick((n) => n + 1);
+      setNowTick(Date.now());
+    }, 30000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(upcomingBlink, {
+          toValue: 1,
+          duration: 650,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(upcomingBlink, {
+          toValue: 0,
+          duration: 650,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [upcomingBlink]);
 
   useEffect(() => {
     let mounted = true;
@@ -412,6 +491,20 @@ export default function TripDetailScreen() {
     };
   }, [stops, fromStopName, toStopName, departureTime, arrivalTime, stopsCount, durationMinutes]);
 
+  const upcomingStopIndex = useMemo(() => {
+    const dateYmd = serviceDate || (scheduledDateTime ? String(scheduledDateTime).slice(0, 10) : '');
+    return computeUpcomingStopIndex(stops, dateYmd, liveDelayMinutes);
+  }, [stops, serviceDate, scheduledDateTime, liveDelayMinutes, nowTick]);
+
+  const upcomingBlinkColor = useMemo(
+    () =>
+      upcomingBlink.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['#111827', STATUS_DELAYED],
+      }),
+    [upcomingBlink],
+  );
+
   const handleSaveTrip = useCallback(async () => {
     if (!tripId || !fromStopId || isSaving) return;
 
@@ -500,40 +593,85 @@ export default function TripDetailScreen() {
   const renderStop = useCallback(({ item, index }) => {
     const isEndpoint = item.isFrom || item.isTo;
     const isLast = stops && index === stops.length - 1;
-    const isPast = false;
-    const isNext = false;
+    const isPast = upcomingStopIndex >= 0 && index < upcomingStopIndex;
+    const isNext = upcomingStopIndex >= 0 && index === upcomingStopIndex;
     const timeText = formatStopLiveTimeLabel(item, liveDelayMinutes);
     const timeLabel = item.isFrom ? `Departs ${timeText}` : item.isTo ? `Arrives ${timeText}` : timeText;
     const rowPlatformCode = isBus ? null : (item.platformCode || (item.isFrom ? displayPlatformCode : null) || (item.isTo ? displayDestinationPlatformCode : null));
     const stopNameStyle = [
       isEndpoint ? styles.stopNameEndpoint : styles.stopNameIntermediate,
       isPast ? styles.stopNamePast : null,
-      isNext ? styles.stopNameNext : null,
     ];
-    const timeStyle = [styles.stopTimeLabel, isPast ? styles.stopTimePast : null, isNext ? styles.stopTimeNext : null];
-    const platformStyle = [styles.stopPlatformLabel, isPast ? styles.stopTimePast : null, isNext ? styles.stopTimeNext : null];
+    const timeStyle = [
+      styles.stopTimeLabel,
+      isPast ? styles.stopTimePast : null,
+      isNext ? { color: upcomingBlinkColor } : null,
+    ];
+    const platformStyle = [
+      styles.stopPlatformLabel,
+      isPast ? styles.stopTimePast : null,
+      isNext ? { color: upcomingBlinkColor } : null,
+    ];
+    const connectorAboveStyle = [
+      styles.connectorLine,
+      index === 0 && styles.connectorInvisible,
+      isPast ? styles.connectorPast : null,
+    ];
+    const connectorBelowStyle = [
+      styles.connectorLine,
+      isLast && styles.connectorInvisible,
+      isPast ? styles.connectorPast : null,
+    ];
+    const StopNameText = isNext ? Animated.Text : Text;
+    const StopTimeText = isNext ? Animated.Text : Text;
+    const PlatformText = isNext ? Animated.Text : Text;
+    const StopNumberCircle = isNext ? Animated.View : View;
+    const stopNumberCircleStyle = [
+      styles.stopNumberCircle,
+      isPast ? styles.stopNumberCirclePast : null,
+      isNext ? { backgroundColor: upcomingBlinkColor, borderColor: upcomingBlinkColor } : null,
+    ];
+    const stopNumberTextStyle = [
+      styles.stopNumberText,
+      isPast ? styles.stopNumberTextPast : null,
+      isNext ? styles.stopNumberTextNext : null,
+    ];
 
     return (
       <View style={styles.stopRow} key={`${item.stop_id}-${index}`}>
         <View style={styles.timelineCol}>
-          <View style={[styles.connectorLine, index === 0 && styles.connectorInvisible, isPast ? styles.connectorPast : null]} />
-          <View style={[isEndpoint ? styles.dotEndpoint : styles.dotIntermediate, isPast ? styles.dotPast : null]} />
-          <View style={[styles.connectorLine, isLast && styles.connectorInvisible, isPast ? styles.connectorPast : null]} />
+          <View style={connectorAboveStyle} />
+          <StopNumberCircle style={stopNumberCircleStyle}>
+            <Text style={stopNumberTextStyle}>{index}</Text>
+          </StopNumberCircle>
+          <View style={connectorBelowStyle} />
         </View>
 
         <View style={styles.stopContent}>
           <View style={styles.stopMainRow}>
             <View style={styles.stopTitleWrap}>
-              <Text style={stopNameStyle} numberOfLines={1}>{item.stop_name}</Text>
-              {isNext ? <Text style={styles.nextStopBadge}>Next stop</Text> : null}
+              <StopNameText
+                style={isNext ? [...stopNameStyle, { color: upcomingBlinkColor }] : stopNameStyle}
+                numberOfLines={1}
+              >
+                {item.stop_name}
+              </StopNameText>
             </View>
-            <Text style={timeStyle} numberOfLines={1}>{timeLabel}</Text>
+            <StopTimeText style={timeStyle} numberOfLines={1}>{timeLabel}</StopTimeText>
           </View>
-          {rowPlatformCode ? <Text style={platformStyle}>{`Platform ${rowPlatformCode}`}</Text> : null}
+          {rowPlatformCode ? <PlatformText style={platformStyle}>{`Platform ${rowPlatformCode}`}</PlatformText> : null}
         </View>
       </View>
     );
-  }, [liveDelayMinutes, displayDestinationPlatformCode, displayPlatformCode, isBus, stops]);
+  }, [
+    liveDelayMinutes,
+    displayDestinationPlatformCode,
+    displayPlatformCode,
+    isBus,
+    stops,
+    upcomingStopIndex,
+    upcomingBlinkColor,
+  ]);
 
   const liveStatusLabel = useMemo(() => {
     return formatLiveStatusLabel(liveStatus, liveDelayMinutes, summary.departure);
@@ -654,13 +792,24 @@ const styles = StyleSheet.create({
   sectionChipText: { fontSize: 12, fontWeight: '700', color: '#2f6d49', textTransform: 'uppercase', letterSpacing: 0.4 },
   stopsCard: { backgroundColor: '#fff', marginHorizontal: 12, borderRadius: 14, paddingVertical: 4, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6 },
   stopRow: { flexDirection: 'row', marginHorizontal: 14 },
-  timelineCol: { width: 28, alignItems: 'center' },
+  timelineCol: { width: 32, alignItems: 'center' },
   connectorLine: { width: 2, flex: 1, minHeight: 10, backgroundColor: '#ddd' },
   connectorInvisible: { backgroundColor: 'transparent' },
-  dotEndpoint: { width: 12, height: 12, borderRadius: 6, backgroundColor: GO_GREEN, marginVertical: 2 },
-  dotIntermediate: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ccc', marginVertical: 2 },
-  dotPast: { backgroundColor: '#cfd5dd' },
-  dotNext: { backgroundColor: STATUS_DELAYED },
+  stopNumberCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: '#111827',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 2,
+  },
+  stopNumberCirclePast: { borderColor: '#cfd5dd', backgroundColor: '#fff' },
+  stopNumberText: { fontSize: 11, lineHeight: 13, fontWeight: '800', color: '#111827' },
+  stopNumberTextPast: { color: '#9ca3af' },
+  stopNumberTextNext: { color: '#fff' },
   connectorPast: { backgroundColor: '#cfd5dd' },
   stopContent: { flex: 1, paddingVertical: 10 },
   stopMainRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
@@ -668,9 +817,7 @@ const styles = StyleSheet.create({
   stopNameEndpoint: { fontSize: 15, fontWeight: '800', color: '#1f2937' },
   stopNameIntermediate: { fontSize: 15, fontWeight: '700', color: '#374151' },
   stopNamePast: { color: '#9ca3af' },
-  stopNameNext: { color: STATUS_DELAYED },
   stopTimeLabel: { fontSize: 13, fontWeight: '700', color: '#111827' },
   stopTimePast: { color: '#9ca3af' },
-  stopTimeNext: { color: STATUS_DELAYED },
   stopPlatformLabel: { marginTop: 2, fontSize: 12, color: '#2f6d49', fontWeight: '700' },
 });

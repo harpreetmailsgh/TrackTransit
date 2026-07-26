@@ -54,6 +54,19 @@ function normalizeText(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function toTorontoDateTime(value) {
+  const dt = DateTime.fromISO(String(value || '')).setZone('America/Toronto');
+  return dt.isValid ? dt : null;
+}
+
+function getTripStartDateTime(item) {
+  return toTorontoDateTime(item?.liveDateTime || item?.scheduledDateTime);
+}
+
+function getTripCompletionDateTime(item) {
+  return toTorontoDateTime(item?.liveArrivalDateTime || item?.arrivalDateTime || item?.liveDateTime || item?.scheduledDateTime);
+}
+
 function pickMatchingSavedSlot(item, rows) {
   const wantedDeparture = String(item?.departureTime || '').trim();
   const wantedPattern = normalizeText(item?.servicePattern);
@@ -69,7 +82,11 @@ function pickMatchingSavedSlot(item, rows) {
   });
 
   if (!filtered.length) return null;
-  return filtered[0];
+  return [...filtered].sort((a, b) => {
+    const aDt = getTripStartDateTime(a);
+    const bDt = getTripStartDateTime(b);
+    return (aDt?.toMillis() ?? Number.MAX_SAFE_INTEGER) - (bDt?.toMillis() ?? Number.MAX_SAFE_INTEGER);
+  })[0];
 }
 
 export default function SavedScreen() {
@@ -167,6 +184,7 @@ export default function SavedScreen() {
         delayMinutes: delayMin,
         liveDateTime: liveDepartDt.toISO(),
         liveTimeLabel: liveDepartDt.toFormat('h:mm a').toUpperCase(),
+        liveArrivalDateTime: liveArriveDt ? liveArriveDt.toISO() : st.arrivalDateTime ?? null,
         liveArrivalTimeLabel: liveArriveDt
           ? liveArriveDt.toFormat('h:mm a').toUpperCase()
           : st.arrivalTimeAtTo,
@@ -193,8 +211,8 @@ export default function SavedScreen() {
           if (!matched) continue;
 
           const enriched = enrichWithLive(matched);
-          const effectiveDt = DateTime.fromISO(enriched.liveDateTime || enriched.scheduledDateTime);
-          if (probeDate.hasSame(now, 'day') && effectiveDt.isValid && effectiveDt < now) {
+          const completionDt = getTripCompletionDateTime(enriched);
+          if (probeDate.hasSame(now, 'day') && completionDt?.isValid && completionDt < now) {
             continue;
           }
           return enriched;
@@ -216,8 +234,8 @@ export default function SavedScreen() {
       if (!staticTrips.length) return null;
 
       const filtered = staticTrips.map(enrichWithLive).filter((x) => {
-        const delaySec = x.delayMinutes != null ? Number(x.delayMinutes) * 60 : 0;
-        return DateTime.fromISO(x.scheduledDateTime).plus({ seconds: delaySec }) >= now;
+        const completionDt = getTripCompletionDateTime(x);
+        return !completionDt?.isValid || completionDt >= now;
       });
       return filtered[0] || null;
     }
@@ -246,6 +264,18 @@ export default function SavedScreen() {
     return map;
   }, [getNextTripForTemplate, items, ready, savedSchedulesEpoch]);
 
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => {
+      const aNext = previewMap.get(a.key);
+      const bNext = previewMap.get(b.key);
+      const aDt = getTripStartDateTime(aNext);
+      const bDt = getTripStartDateTime(bNext);
+      const aFallback = parseClockLabelToMinutes(a?.departureTime) ?? Number.MAX_SAFE_INTEGER;
+      const bFallback = parseClockLabelToMinutes(b?.departureTime) ?? Number.MAX_SAFE_INTEGER;
+      return (aDt?.toMillis() ?? aFallback) - (bDt?.toMillis() ?? bFallback);
+    });
+  }, [items, previewMap]);
+
   const openTrip = useCallback(
     (item) => {
       const next = previewMap.get(item.key);
@@ -265,6 +295,7 @@ export default function SavedScreen() {
           toStopName: toName,
           lineName: next.lineName || item.lineName || '',
           servicePattern: next.servicePattern || item.servicePattern || '',
+          serviceDate: next.scheduledDateTime ? String(next.scheduledDateTime).slice(0, 10) : item.serviceDate || '',
           durationMinutes: next.durationMinutes != null ? String(next.durationMinutes) : '',
           stopsCount: next.stopsCount != null ? String(next.stopsCount) : '',
           departureTime: next.scheduledTimeLabel || '',
@@ -328,7 +359,7 @@ export default function SavedScreen() {
           </View>
         ) : (
           <FlatList
-            data={items}
+            data={sortedItems}
             keyExtractor={(item) => String(item.key)}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
